@@ -17,7 +17,7 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-green-700 shadow-lg">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-8 hidden md:flex">
+      <div className="max-w-7xl mx-auto px-6 py-4 hidden md:flex items-center justify-between gap-8">
         {/* Left: Logo + Name */}
         <Link href="/" className="flex items-center gap-4 shrink-0">
           <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-transparent shrink-0 flex items-center justify-center">
