@@ -1,0 +1,21 @@
+// src/data/nearVsuLocations.ts
+export const nearVsuLocations = [
+  "VSU Main Campus",
+  "VSU Dormitory Area",
+  "Utod (Guadalupe)",
+  "Kil-im",
+  "Gabas",
+  "Patag",
+  "Santa Cruz",
+  "Pangasugan",
+  "Zone 1–7",
+  "Poblacion",
+  "Marcos Village",
+  "San Agustin",
+  "Bunga",
+  "Ampihanon",
+  "Hilapnitan",
+  "Candadam",
+  "Pomponan",
+  "Mailhi",
+] as const;
