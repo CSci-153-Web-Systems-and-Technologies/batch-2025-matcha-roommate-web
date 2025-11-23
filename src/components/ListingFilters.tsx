@@ -1,7 +1,7 @@
 // src/components/ListingFilters.tsx
 export default function ListingFilters() {
   return (
-    <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
+    <div className="flex flex-wrap items-center justify-center gap-4">
       {/* Green "All" button */}
       <button className="bg-green-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-green-700 transition shadow-md">
         All

@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Link from "next/link";
 import ListingFilters from "@/components/ListingFilters";
 import ListingCard from "@/components/ListingCard";
+import { listings } from "@/data/listings";
 
 export default function Home() {
   return (
@@ -58,33 +59,18 @@ export default function Home() {
           </div>
 
           {/* Step 3: The 3 cards */}
-          <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto px-6">
-            <ListingCard
-              imageSrc="/images/landing/card1.jpg"
-              badge="New"
-              price="2000"
-              title="Marco • Male"
-              description="Chill guy, loves gym and music. Looking for a clean and respectful roommate."
-              location="Quezon City"
-            />
-
-            <ListingCard
-              imageSrc="/images/landing/card2.jpg"
-              badge={null}
-              price="3500"
-              title="Tyler • Male"
-              description="Student | Non-smoker | Loves golf and flowers. Looking for a peaceful place near school."
-              location="Makati City"
-            />
-
-            <ListingCard
-              imageSrc="/images/landing/card3.jpg"
-              badge={null}
-              price="8500"
-              title="Luxury Bed Space"
-              description="High-end boarding house with balcony, own CR, 24/7 security, free Wi-Fi & utilities included."
-              location="BGC, Taguig"
-            />
+          <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                imageSrc={listing.imageSrc}
+                badge={listing.badge}
+                price={listing.price}
+                title={listing.title}
+                description={listing.description}
+                location={listing.location}
+              />  
+            ))}
           </div>
         </section>
       </main>
