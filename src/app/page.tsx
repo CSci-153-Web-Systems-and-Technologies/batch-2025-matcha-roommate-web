@@ -16,9 +16,10 @@ export default function Home() {
         <section className="max-w-5xl mx-auto px-6 pt-20 pb-24">
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center justify-center">
 
-            {/* Need a roommate? */}
-            <Link href="/register" className="block">
+{/* 1. Need a roommate? (Owner) -> Goes to Room Creation after signup */}
+            <Link href="/register?redirect=/rooms/create" className="block">
               <div className="hover:scale-105 transition-transform duration-300">
+                {/* ... existing image code ... */}
                 <Image
                   src="/images/landing/need-roommate.png"
                   alt="Need a roommate? List your room"
@@ -30,9 +31,10 @@ export default function Home() {
               </div>
             </Link>
 
-            {/* Looking for a room? */}
-            <Link href="/register" className="block">
+            {/* 2. Looking for a room? (Seeker) -> Goes to Profile Creation after signup */}
+            <Link href="/register?redirect=/profiles/create" className="block">
               <div className="hover:scale-105 transition-transform duration-300">
+                 {/* ... existing image code ... */}
                 <Image
                   src="/images/landing/looking-for-room.png"
                   alt="Looking for a room? Create Your Profile"
