@@ -2,8 +2,8 @@
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import Link from "next/link";
-import ListingFilters from "@/components/ListingFilters";
-import ListingCard from "@/components/ListingCard";
+import ListingFilters from "@/components/listings/ListingFilters";
+import ListingCard from "@/components/listings/ListingCard";
 import { listings } from "@/data/listings";
 
 export default function Home() {
