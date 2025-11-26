@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { nearVsuLocations } from "@/data/nearVsuLocations";
 
@@ -74,7 +75,7 @@ export function SeekerProfileForm() {
           <Separator />
 
           {/* --- SECTION 2: HOUSING PREFERENCES --- */}
-          <section className="space-y-4">
+          <section className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold">2</span>
               Housing Preferences
@@ -97,7 +98,7 @@ export function SeekerProfileForm() {
                 </Select>
               </div>
 
-              {/* UPDATED: Custom Budget Input */}
+              {/* Custom Budget Input */}
               <div className="space-y-2">
                 <Label>Maximum Monthly Budget (₱)</Label>
                 <div className="relative">
@@ -105,7 +106,7 @@ export function SeekerProfileForm() {
                   <Input 
                     type="number" 
                     placeholder="e.g. 3500" 
-                    className="pl-7" // Add padding-left to make room for the peso sign
+                    className="pl-7" 
                     min={0}
                     step={100}
                   />
@@ -119,19 +120,43 @@ export function SeekerProfileForm() {
                 <Label>Move-in Date</Label>
                 <Input type="date" />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label>Room Cooling</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Aircon or Fan?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="aircon-required">Must have Aircon</SelectItem>
-                    <SelectItem value="aircon-optional">Aircon is Optional</SelectItem>
-                    <SelectItem value="fan-only">Fan is fine (Cheaper)</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* --- NEW: AMENITIES MATCHING --- */}
+            <div className="space-y-3 pt-2">
+              <Label className="text-base font-semibold">Amenities / Must-Haves</Label>
+              <p className="text-sm text-muted-foreground mb-3">Select the items you absolutely need.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 transition">
+                  <Checkbox id="wifi" />
+                  <Label htmlFor="wifi" className="cursor-pointer font-normal">Wi-Fi / Internet Required</Label>
+                </div>
+
+                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 transition">
+                  <Checkbox id="own-cr" />
+                  <Label htmlFor="own-cr" className="cursor-pointer font-normal">Own CR (Private Bathroom)</Label>
+                </div>
+
+                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 transition">
+                  <Checkbox id="cooking" />
+                  <Label htmlFor="cooking" className="cursor-pointer font-normal">Cooking Allowed</Label>
+                </div>
+
+                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 transition">
+                  <Checkbox id="aircon" />
+                  <Label htmlFor="aircon" className="cursor-pointer font-normal">Aircon Required</Label>
+                </div>
+
+                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 transition">
+                  <Checkbox id="laundry" />
+                  <Label htmlFor="laundry" className="cursor-pointer font-normal">Laundry Area</Label>
+                </div>
+
+                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 transition">
+                  <Checkbox id="visitors" />
+                  <Label htmlFor="visitors" className="cursor-pointer font-normal">Visitors Allowed</Label>
+                </div>
               </div>
             </div>
           </section>
