@@ -1,11 +1,44 @@
-// src/components/login-form.tsx
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import Link from "next/link"
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createClient } from "@/utils/supabase/client"; // Import Supabase Helper
 
 export function LoginForm() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const supabase = createClient();
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError("Invalid email or password.");
+      setLoading(false);
+    } else {
+      router.push("/dashboard");
+      router.refresh(); // Refresh to update Navbar state
+    }
+  };
+
   return (
     <Card className="overflow-hidden py-0 border-0 shadow-2xl">
       <CardContent className="p-0 md:grid md:grid-cols-2">
@@ -19,10 +52,16 @@ export function LoginForm() {
               </p>
             </div>
 
-            <form className="space-y-6">
+            {error && (
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md text-center">
+                {error}
+              </div>
+            )}
+
+            <form className="space-y-6" onSubmit={handleLogin}>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="you@vsu.edu.ph" />
+                <Input id="email" name="email" type="email" placeholder="you@vsu.edu.ph" required />
               </div>
 
               <div className="space-y-2">
@@ -32,11 +71,15 @@ export function LoginForm() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input id="password" type="password" />
+                <Input id="password" name="password" type="password" required />
               </div>
 
-              <Button className="h-12 w-full text-lg font-semibold">
-                Log In
+              <Button 
+                type="submit" 
+                className="h-12 w-full text-lg font-semibold bg-green-700 hover:bg-green-800"
+                disabled={loading}
+              >
+                {loading ? "Logging in..." : "Log In"}
               </Button>
             </form>
 
@@ -56,7 +99,7 @@ export function LoginForm() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 6.75c1.65 0 3.12.63 4.29 1.83l3.21-3.21C17.46 3.06 14.97 2 12 2 7.7 2 3.99 4.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Continue with Google
+              Google
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
@@ -68,15 +111,15 @@ export function LoginForm() {
           </div>
         </div>
 
-        {/* Right side – Your beautiful cat logo */}
+        {/* Right side – Visuals */}
         <div className="relative hidden md:flex flex-col items-center justify-center bg-linear-to-br from-green-600 to-green-800 px-12 py-16 text-white">
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/10" />
           <div className="relative z-10 text-center max-w-lg space-y-10">
-            <div className="mx-auto w-48 h-48 rounded-full overflow-hidden flex items-center justify-center">
+            <div className="mx-auto w-48 h-48 rounded-full overflow-hidden flex items-center justify-center border-4 border-white/20">
               <img
                 src="/images/logo/logo.jpg"
                 alt="MatchaRoommate Cat"
-                className="object-cover w-60 h-60"
+                className="object-cover w-full h-full"
               />
             </div>
             <div className="space-y-6">
@@ -85,8 +128,6 @@ export function LoginForm() {
               </h2>
               <p className="text-lg md:text-xl leading-relaxed opacity-95">
                 Find your ideal room or roommate—fast, free, and hassle-free.
-                <br />
-                Post listings, share your preferences, and connect with students or faculty looking for the perfect roommate to match.
               </p>
             </div>
           </div>

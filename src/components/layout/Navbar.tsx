@@ -2,13 +2,26 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { nearVsuLocations } from "@/data/nearVsuLocations";
 import { Search } from "lucide-react";
+import { createClient } from "@/utils/supabase/client"; // Import Supabase
+import { User } from "@supabase/supabase-js"; // Import Type
 
 export default function Navbar() {
   const [query, setQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [user, setUser] = useState<User | null>(null); // Track user state
+
+  // Check auth on load
+  useEffect(() => {
+    const supabase = createClient();
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    }
+    getUser();
+  }, []);
 
   const filteredLocations = query
     ? nearVsuLocations.filter((loc) =>
@@ -17,7 +30,6 @@ export default function Navbar() {
     : [];
 
   return (
-    // CHANGED: Removed 'shadow-lg' for a flat, clean look
     <nav className="fixed top-0 left-0 right-0 z-50 bg-green-500 border-b border-green-600 pr-(--removed-body-scroll-bar-size)">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
         
@@ -33,7 +45,6 @@ export default function Navbar() {
               priority
             />
           </div>
-          
           <span className="text-xl font-bold text-white tracking-tight hidden sm:block">
             MatchaRoommate
           </span>
@@ -81,18 +92,31 @@ export default function Navbar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="text-sm font-semibold text-white/90 hover:text-white transition-colors"
-          >
-            Log In
-          </Link>
-          <Link
-            href="/register"
-            className="bg-white text-green-600 px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-green-50 transition shadow-md hover:shadow-lg"
-          >
-            Get Started
-          </Link>
+          {user ? (
+            // IF LOGGED IN: Show Dashboard Button
+            <Link
+              href="/dashboard"
+              className="bg-white text-green-600 px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-green-50 transition shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            // IF LOGGED OUT: Show Login/Register
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-white/90 hover:text-white transition-colors"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/register"
+                className="bg-white text-green-600 px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-green-50 transition shadow-md hover:shadow-lg"
+              >
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
