@@ -1,24 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, User, MessageSquare, List, Bell, LogOut, Settings } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Home, User, MessageSquare, List, Bell, LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { createClient } from "@/utils/supabase/client"; // Import Supabase
 
-// ADDED: 'count' property to the items
+// ... sidebarItems logic stays the same ...
 const sidebarItems = [
   { icon: Home, label: "Overview", href: "/dashboard" },
   { icon: User, label: "My Profile", href: "/dashboard/profile" },
   { icon: List, label: "My Listings", href: "/dashboard/listings" },
-  { icon: MessageSquare, label: "Messages", href: "/dashboard/messages", count: 3 }, // Added count
-  { icon: Bell, label: "Requests", href: "/dashboard/requests", count: 12 },         // Added count
+  { icon: MessageSquare, label: "Messages", href: "/dashboard/messages", count: 3 },
+  { icon: Bell, label: "Requests", href: "/dashboard/requests", count: 12 },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter(); // Initialize Router
   const { isCollapsed, isMobile, toggleSidebar } = useSidebar();
+
+  // --- Handle Sign Out ---
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login"); // Redirect to login
+    router.refresh(); // Clear cache
+  };
 
   const NavList = () => (
     <nav className="flex-1 py-4 space-y-1">
@@ -36,11 +46,9 @@ export function AppSidebar() {
               isCollapsed && !isMobile ? "justify-center px-2" : "" 
             )}
           >
-            {/* ICON CONTAINER (Relative for badge positioning in mini mode) */}
+            {/* Icon Container */}
             <div className="relative">
               <item.icon className={cn("w-6 h-6 shrink-0", isActive ? "text-green-600" : "text-gray-500")} />
-              
-              {/* COLLAPSED MODE BADGE (Red Dot) */}
               {isCollapsed && !isMobile && item.count && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white ring-2 ring-white">
                   {item.count > 9 ? '9+' : item.count}
@@ -48,12 +56,10 @@ export function AppSidebar() {
               )}
             </div>
             
-            {/* TEXT LABEL & EXPANDED BADGE */}
+            {/* Text & Badge */}
             {(!isCollapsed || isMobile) && (
               <div className="flex flex-1 items-center justify-between truncate">
                 <span>{item.label}</span>
-                
-                {/* EXPANDED MODE BADGE (Number Pill) */}
                 {item.count && (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-green-100 px-1.5 text-xs font-bold text-green-700">
                     {item.count}
@@ -62,7 +68,7 @@ export function AppSidebar() {
               </div>
             )}
 
-            {/* Tooltip for Mini Mode */}
+            {/* Hover Tooltip (Mini Mode) */}
             {isCollapsed && !isMobile && (
               <div className="absolute left-14 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
                 {item.label}
@@ -97,11 +103,15 @@ export function AppSidebar() {
     >
       <NavList />
       
+      {/* Footer / Sign Out */}
       <div className="p-4 border-t border-gray-100 mt-auto">
-        <button className={cn(
-          "flex items-center gap-4 w-full text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors p-2",
-          isCollapsed ? "justify-center" : ""
-        )}>
+        <button 
+          onClick={handleSignOut}
+          className={cn(
+            "flex items-center gap-4 w-full text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors p-2",
+            isCollapsed ? "justify-center" : ""
+          )}
+        >
           <LogOut className="w-6 h-6 shrink-0" />
           {!isCollapsed && <span>Sign Out</span>}
         </button>
