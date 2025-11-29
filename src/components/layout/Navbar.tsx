@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { nearVsuLocations } from "@/data/nearVsuLocations";
+import { Search } from "lucide-react";
 
 export default function Navbar() {
   const [query, setQuery] = useState("");
@@ -16,62 +17,50 @@ export default function Navbar() {
     : [];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-green-700 shadow-lg pr-(--removed-body-scroll-bar-size)">
-      <div className="max-w-7xl mx-auto px-6 py-4 hidden md:flex items-center justify-between gap-8">
+    // CHANGED: Removed 'shadow-lg' for a flat, clean look
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-green-500 border-b border-green-600 pr-(--removed-body-scroll-bar-size)">
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
+        
         {/* Left: Logo + Name */}
-        <Link href="/" className="flex items-center gap-4 shrink-0">
-          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-transparent shrink-0 flex items-center justify-center">
+        <Link href="/" className="flex items-center gap-3 shrink-0 group">
+          <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 shadow-sm group-hover:scale-105 transition-transform bg-white">
             <Image
               src="/images/navbar/logo.png"
-              alt="MatchaRoommate"
-              width={200}
-              height={200}
-              className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover"
+              alt="MatchaRoommate Logo"
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
               priority
             />
           </div>
-          <span className="text-white text-xl md:text-2xl font-bold hidden sm:block">
+          
+          <span className="text-xl font-bold text-white tracking-tight hidden sm:block">
             MatchaRoommate
           </span>
         </Link>
 
-        {/* Center: Search Bar + Dropdown */}
-        <div className="flex-1 max-w-2xl relative">
-          <input
-            type="text"
-            placeholder="Search location, price, or roommate..."
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setShowDropdown(true);
-            }}
-            onFocus={() => setShowDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-            className="w-full pl-12 pr-6 py-3 rounded-full bg-white text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-green-300 transition shadow-sm"
-          />
-
-          {/* Search Icon */}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-              className="w-6 h-6 text-gray-500"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-              />
-            </svg>
+        {/* Center: Search Bar */}
+        <div className="flex-1 max-w-xl relative hidden md:block">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search location..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-green-700/40 border border-green-400/50 text-white placeholder-green-100 focus:bg-white focus:text-gray-900 focus:placeholder-gray-500 focus:ring-2 focus:ring-green-300 transition-all text-sm outline-none"
+            />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-green-100" />
           </div>
 
-          {/* 3-column dropdown */}
+          {/* Dropdown Results */}
           {showDropdown && filteredLocations.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-3xl shadow-xl border border-gray-100 p-6 z-50">
-              <div className="grid grid-cols-3 gap-x-8 gap-y-6 max-h-96 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50">
+              <div className="max-h-64 overflow-y-auto">
                 {filteredLocations.map((loc) => (
                   <button
                     key={loc}
@@ -80,12 +69,9 @@ export default function Navbar() {
                       setQuery(loc);
                       setShowDropdown(false);
                     }}
-                    className="text-center group"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-lg transition-colors"
                   >
-                    <span className="text-lg font-medium text-gray-900 group-hover:text-green-700 transition">
-                      {loc}
-                    </span>
-                    <div className="mt-1 h-0.5 bg-gray-300 group-hover:bg-green-600 transition"></div>
+                    {loc}
                   </button>
                 ))}
               </div>
@@ -93,25 +79,26 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Right: Login Button */}
-        <Link
-          href="/login"
-          className="bg-white text-green-700 px-8 py-3 rounded-full font-bold hover:bg-green-50 transition shadow-md whitespace-nowrap"
-        >
-          Login
-        </Link>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-4">
+          <Link
+            href="/login"
+            className="text-sm font-semibold text-white/90 hover:text-white transition-colors"
+          >
+            Log In
+          </Link>
+          <Link
+            href="/register"
+            className="bg-white text-green-600 px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-green-50 transition shadow-md hover:shadow-lg"
+          >
+            Get Started
+          </Link>
+        </div>
       </div>
 
-      {/* Mobile version */}
-      <div className="md:hidden flex items-center justify-center py-3">
-        <Image
-          src="/logo.png"
-          alt="MatchaRoommate"
-          width={48}
-          height={48}
-          className="rounded-full"
-          priority
-        />
+      {/* Mobile Header */}
+      <div className="md:hidden h-14 flex items-center justify-center border-t border-green-600">
+        <span className="font-bold text-white">MatchaRoommate</span>
       </div>
     </nav>
   );
