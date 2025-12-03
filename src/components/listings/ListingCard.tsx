@@ -21,9 +21,10 @@ interface Props {
 }
 
 export default function ListingCard({ item }: Props) {
-  // SAFETY CHECK: This line stops the crash if 'item' is undefined
+  // SAFETY CHECK: If item is undefined/null, do not render.
   if (!item) return null;
 
+  // Safely handle images array (default to empty if null)
   const images = item.images || [];
   const hasImage = images.length > 0;
   

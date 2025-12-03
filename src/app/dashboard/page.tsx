@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import ListingFilters from "@/components/listings/ListingFilters";
-import ListingCard, { FeedItem } from "@/components/listings/ListingCard"; // Updated Import
-import { createClient } from "@/utils/supabase/server"; // Server Client
+import ListingCard, { FeedItem } from "@/components/listings/ListingCard";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function DashboardOverview() {
   const supabase = await createClient();
 
-  // Fetch data from our new View
+  // 1. Fetch from your existing 'unified_feed' table/view
+  // We trust this table already standardizes columns like 'budget_or_price'
   const { data: posts, error } = await supabase
     .from('unified_feed')
     .select('*')
@@ -44,7 +45,7 @@ export default async function DashboardOverview() {
         </div>
       </div>
       
-      {/* FEED */}
+      {/* FEED SECTION */}
       <section className="pt-2">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
@@ -59,13 +60,21 @@ export default async function DashboardOverview() {
           {posts && posts.length > 0 ? (
             posts.map((post) => (
               <ListingCard
-                key={post.post_id}
-                item={post as FeedItem} // Cast to our type
+                // Use a combination of type + id for a unique key in mixed lists
+                key={`${post.type}-${post.post_id}`} 
+                item={post as FeedItem} // Cast to FeedItem type
               />  
             ))
           ) : (
-            <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
-              <p>No listings found yet. Be the first to post!</p>
+            // Empty State
+            <div className="col-span-full py-16 text-center bg-white rounded-xl border border-gray-100 p-8 shadow-sm">
+              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">No listings found</h3>
+              <p className="text-gray-500 max-w-sm mx-auto mt-2">
+                It looks like the feed is empty right now. Try adjusting your filters or check back later.
+              </p>
             </div>
           )}
         </div>
