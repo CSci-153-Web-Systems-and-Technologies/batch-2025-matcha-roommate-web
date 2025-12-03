@@ -26,7 +26,7 @@ export function AppSidebar() {
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/login"); // Redirect to login
+    router.push("/"); // CHANGED: Redirect to Landing Page
     router.refresh(); // Clear cache
   };
 
