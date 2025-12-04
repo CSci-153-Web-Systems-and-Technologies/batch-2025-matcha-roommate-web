@@ -1,95 +1,104 @@
-import Image from "next/image";
+import Navbar from "@/components/layout/Navbar";
 import Link from "next/link";
-import { MapPin, User } from "lucide-react";
+import ListingFilters from "@/components/listings/ListingFilters";
+import ListingCard, { FeedItem } from "@/components/listings/ListingCard"; // Import FeedItem type
+import { listings } from "@/data/listings";
+import { ChevronRight } from "lucide-react";
 
-export type FeedItem = {
-  post_id: string;
-  type: 'room' | 'seeker';
-  title: string;
-  description: string;
-  budget_or_price: number;
-  location: string;
-  images: string[] | null;
-  first_name: string;
-  avatar_url: string | null;
-  created_at: string;
-  user_id: string;
-};
-
-interface Props {
-  item: FeedItem;
-}
-
-export default function ListingCard({ item }: Props) {
-  // SAFETY CHECK: If item is undefined/null, do not render.
-  if (!item) return null;
-
-  // Safely handle images array (default to empty if null)
-  const images = item.images || [];
-  const hasImage = images.length > 0;
-  
-  const displayImage = hasImage 
-    ? images[0] 
-    : "/images/landing/looking-for-room.png"; 
-
-  const destinationUrl = item.type === 'room' 
-    ? `/rooms/${item.post_id || ''}` 
-    : `/profiles/${item.user_id || ''}`;
-
+export default function Home() {
   return (
-    <Link href={destinationUrl} className="block h-full">
-      <div className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-300 flex flex-col h-full cursor-pointer">
+    <>
+      <Navbar />
+
+      <main className="min-h-screen bg-gray-50">
         
-        <div className="relative h-48 overflow-hidden bg-gray-100">
-          <Image
-            src={displayImage}
-            alt={item.title || "Listing"}
-            width={600}
-            height={400}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-
-          <div className={`absolute top-3 left-3 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm ${
-            item.type === 'room' ? 'bg-green-600' : 'bg-blue-500'
-          }`}>
-            {item.type === 'room' ? 'ROOM FOR RENT' : 'LOOKING FOR ROOM'}
+        {/* HERO SECTION */}
+        <section className="bg-green-500 pt-24 pb-12 px-6 rounded-b-[2.5rem] shadow-sm">
+          <div className="max-w-7xl mx-auto text-center mb-8 space-y-4">
+            <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
+              Find your <span className="text-green-100">perfect match</span>
+              <br /> near VSU.
+            </h1>
+            
+            <p className="text-lg text-white/90 max-w-2xl mx-auto leading-relaxed">
+              The safest way for VSU students and Baybay locals to find rooms, boarding houses, and compatible roommates.
+            </p>
           </div>
 
-          <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md text-green-800 font-bold text-sm px-3 py-1 rounded-lg shadow-sm border border-green-100">
-            ₱{item.budget_or_price?.toLocaleString()}<span className="text-xs font-normal text-gray-500">/mo</span>
-          </div>
-        </div>
+          {/* ACTION BUTTONS */}
+          <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6 justify-center">
+            
+            {/* Button 1: Owner */}
+            <Link href="/register?redirect=/rooms/create" className="group block h-full">
+              <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-transparent hover:border-green-300 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-start justify-center text-left h-full">
+                <h3 className="text-2xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">
+                  Need a Roommate?
+                </h3>
+                <p className="text-sm text-gray-500 mt-2 group-hover:text-gray-600">
+                  List your property & find the perfect match
+                </p>
+                <div className="flex items-center gap-1 mt-4 text-green-600 font-bold text-base bg-green-50 px-4 py-2 rounded-full group-hover:bg-green-100 transition-colors">
+                  List your Room <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
 
-        <div className="p-5 flex flex-col flex-1">
-          <h3 className="font-bold text-lg text-gray-900 group-hover:text-green-700 transition-colors line-clamp-1">
-            {item.title}
-          </h3>
-          
-          <p className="text-gray-500 text-sm mt-2 line-clamp-2 leading-relaxed flex-1">
-            {item.description || "No description provided."}
-          </p>
-          
-          <div className="mt-4 flex items-center justify-between pt-4 border-t border-gray-50">
-            <div className="flex items-center gap-1 text-gray-400 text-xs font-medium">
-              <MapPin className="w-3.5 h-3.5" />
-              <span className="truncate max-w-[120px]">{item.location}</span>
+            {/* Button 2: Seeker */}
+            <Link href="/register?redirect=/profiles/create" className="group block h-full">
+              <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-transparent hover:border-green-300 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-start justify-center text-left h-full">
+                <h3 className="text-2xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">
+                  Looking for a Place?
+                </h3>
+                <p className="text-sm text-gray-500 mt-2 group-hover:text-gray-600">
+                  Browse listings & connect with roommates
+                </p>
+                <div className="flex items-center gap-1 mt-4 text-green-600 font-bold text-base bg-green-50 px-4 py-2 rounded-full group-hover:bg-green-100 transition-colors">
+                  Get Started <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
+
+          </div>
+        </section>
+
+        {/* LISTINGS SECTION */}
+        <section className="max-w-7xl mx-auto px-6 py-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Fresh Listings</h2>
+              <p className="text-gray-500 mt-1">Newest rooms and roommate requests.</p>
             </div>
-
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-              {item.avatar_url ? (
-                 <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden relative">
-                   <Image src={item.avatar_url} alt={item.first_name} fill className="object-cover" />
-                 </div>
-              ) : (
-                 <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-700">
-                   <User className="w-3 h-3" />
-                 </div>
-              )}
-              {item.first_name}
-            </div>
+            <ListingFilters />
           </div>
-        </div>
-      </div>
-    </Link>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {listings.map((listing) => {
+              // --- FIX IS HERE ---
+              // We transform the old mock data into the new FeedItem format
+              const feedItem: FeedItem = {
+                post_id: listing.id.toString(),
+                type: 'room', 
+                title: listing.title,
+                description: listing.description,
+                budget_or_price: parseInt(listing.price), 
+                location: listing.location,
+                images: [listing.imageSrc], // Put the single string into an array
+                first_name: "Host", 
+                avatar_url: null,
+                created_at: new Date().toISOString(),
+                user_id: "mock-user-id"
+              };
+
+              return (
+                <ListingCard
+                  key={feedItem.post_id}
+                  item={feedItem} // We pass the single 'item' object now
+                />  
+              );
+            })}
+          </div>
+        </section>
+      </main>
+    </>
   );
 }
