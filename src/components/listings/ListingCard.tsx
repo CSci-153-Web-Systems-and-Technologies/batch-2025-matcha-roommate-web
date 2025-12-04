@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, User } from "lucide-react";
+import { MapPin, User, ImageIcon, Search } from "lucide-react";
 
 export type FeedItem = {
   post_id: string;
@@ -21,17 +21,12 @@ interface Props {
 }
 
 export default function ListingCard({ item }: Props) {
-  // SAFETY CHECK: If item is undefined/null, do not render.
   if (!item) return null;
 
-  // Safely handle images array (default to empty if null)
   const images = item.images || [];
   const hasImage = images.length > 0;
   
-  const displayImage = hasImage 
-    ? images[0] 
-    : "/images/landing/looking-for-room.png"; 
-
+  // Logic: Where should this card link to?
   const destinationUrl = item.type === 'room' 
     ? `/rooms/${item.post_id || ''}` 
     : `/profiles/${item.user_id || ''}`;
@@ -40,15 +35,37 @@ export default function ListingCard({ item }: Props) {
     <Link href={destinationUrl} className="block h-full">
       <div className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-300 flex flex-col h-full cursor-pointer">
         
+        {/* --- IMAGE SECTION --- */}
         <div className="relative h-48 overflow-hidden bg-gray-100">
-          <Image
-            src={displayImage}
-            alt={item.title || "Listing"}
-            width={600}
-            height={400}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          {hasImage ? (
+            // CASE A: We have an image
+            <Image
+              src={images[0]}
+              alt={item.title || "Listing"}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className={`w-full h-full flex flex-col items-center justify-center text-white ${
+               item.type === 'seeker' 
+                 ? 'bg-linear-to-br from-blue-400 to-blue-600' 
+                 : 'bg-gray-200 text-gray-400'                   
+            }`}>
+              {item.type === 'seeker' ? (
+                <>
+                  <Search className="w-12 h-12 opacity-80 mb-2" />
+                  <span className="text-sm font-bold opacity-90">Looking for Room</span>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-12 h-12 opacity-50 mb-2" />
+                  <span className="text-xs font-medium">No photos</span>
+                </>
+              )}
+            </div>
+          )}
 
+          {/* Badges */}
           <div className={`absolute top-3 left-3 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm ${
             item.type === 'room' ? 'bg-green-600' : 'bg-blue-500'
           }`}>
@@ -60,6 +77,7 @@ export default function ListingCard({ item }: Props) {
           </div>
         </div>
 
+        {/* --- DETAILS SECTION --- */}
         <div className="p-5 flex flex-col flex-1">
           <h3 className="font-bold text-lg text-gray-900 group-hover:text-green-700 transition-colors line-clamp-1">
             {item.title}
@@ -75,14 +93,20 @@ export default function ListingCard({ item }: Props) {
               <span className="truncate max-w-[120px]">{item.location}</span>
             </div>
 
+            {/* AVATAR SECTION */}
             <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
               {item.avatar_url ? (
-                 <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden relative">
-                   <Image src={item.avatar_url} alt={item.first_name} fill className="object-cover" />
+                 <div className="w-6 h-6 rounded-full border border-gray-200 overflow-hidden relative">
+                   <Image 
+                     src={item.avatar_url} 
+                     alt={item.first_name} 
+                     fill 
+                     className="object-cover" 
+                   />
                  </div>
               ) : (
-                 <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-700">
-                   <User className="w-3 h-3" />
+                 <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700">
+                   <User className="w-3.5 h-3.5" />
                  </div>
               )}
               {item.first_name}
