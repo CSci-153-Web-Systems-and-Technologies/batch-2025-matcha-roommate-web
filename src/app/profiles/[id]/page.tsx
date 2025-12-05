@@ -15,25 +15,36 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const { id } = await params;
   const supabase = await createClient();
 
-  // 1. Fetch Profile Data
-  const { data: profile, error: profileError } = await supabase
+  // 1. Fetch Profile + Habits + Preferences in one query
+  const { data: profile, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(`
+      *,
+      profile_habits (
+        cleanliness_level,
+        sleep_schedule,
+        pet_status,
+        smoking_status,
+        study_habit
+      ),
+      profile_preferences (
+        budget_max,
+        location_preference,
+        move_in_date,
+        amenities_required
+      )
+    `)
     .eq('id', id)
     .single();
 
-  if (profileError || !profile) {
+  if (error || !profile) {
     return notFound();
   }
 
-  // 2. Fetch Active Seeker Post
-  const { data: seekerPost } = await supabase
-    .from('seeker_posts')
-    .select('*')
-    .eq('user_id', id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+  // 2. Safely extract nested data (Supabase returns arrays for joins)
+  // We use [0] because a user usually has only one set of habits/preferences
+  const habits = profile.profile_habits?.[0] || null;
+  const preferences = profile.profile_preferences?.[0] || null;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -54,7 +65,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         {/* --- PROFILE HEADER CARD --- */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
           
-          {/* FIXED: Updated class to 'bg-linear-to-r' for Tailwind v4 */}
           <div className="h-32 bg-linear-to-r from-green-600 to-green-400"></div>
           
           <div className="px-8 pb-8">
@@ -65,7 +75,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 {profile.avatar_url ? (
                   <Image 
                     src={profile.avatar_url} 
-                    alt={profile.first_name} 
+                    alt={profile.first_name || "User"} 
                     fill 
                     className="object-cover" 
                   />
@@ -87,7 +97,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                       )}
                     </h1>
                     <p className="text-green-700 font-medium text-lg capitalize mt-1">
-                      {profile.occupation || "Student"} • {profile.age ? `${profile.age} years old` : "Age hidden"} • {profile.gender || "Gender hidden"}
+                      {profile.occupation || "Student"} • {profile.gender || "Gender hidden"}
                     </p>
                   </div>
                   
@@ -117,18 +127,18 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Lifestyle & Habits</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <HabitItem icon={Sparkles} label="Cleanliness" value={profile.cleanliness} color="text-blue-600 bg-blue-50" />
-                <HabitItem icon={Moon} label="Sleep Schedule" value={profile.sleep_schedule} color="text-indigo-600 bg-indigo-50" />
-                <HabitItem icon={BookOpen} label="Study Environment" value={profile.study_habits} color="text-amber-600 bg-amber-50" />
-                <HabitItem icon={Cigarette} label="Smoking" value={profile.smoking_status} color={profile.smoking_status === 'smoker' ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"} />
-                <HabitItem icon={Cat} label="Pets" value={profile.pet_status} color="text-orange-600 bg-orange-50" />
+                <HabitItem icon={Sparkles} label="Cleanliness" value={habits?.cleanliness_level} color="text-blue-600 bg-blue-50" />
+                <HabitItem icon={Moon} label="Sleep Schedule" value={habits?.sleep_schedule} color="text-indigo-600 bg-indigo-50" />
+                <HabitItem icon={BookOpen} label="Study Environment" value={habits?.study_habit} color="text-amber-600 bg-amber-50" />
+                <HabitItem icon={Cigarette} label="Smoking" value={habits?.smoking_status} color={habits?.smoking_status === 'smoker' ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"} />
+                <HabitItem icon={Cat} label="Pets" value={habits?.pet_status} color="text-orange-600 bg-orange-50" />
               </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN: Housing Preferences */}
           <div className="lg:col-span-1 space-y-6">
-            {seekerPost ? (
+            {preferences ? (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -140,7 +150,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     <p className="text-gray-500 text-sm mb-1">Looking in area</p>
                     <div className="flex items-center gap-2 text-gray-900 font-bold text-lg">
                       <MapPin className="w-5 h-5 text-green-600" />
-                      {seekerPost.location_preference}
+                      {preferences.location_preference}
                     </div>
                   </div>
 
@@ -151,25 +161,25 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                       <p className="text-gray-500 text-sm mb-1">Max Budget</p>
                       <div className="flex items-center gap-2 text-gray-900 font-bold">
                         <Banknote className="w-4 h-4 text-green-600" />
-                        ₱{seekerPost.budget_max?.toLocaleString()}
+                        ₱{preferences.budget_max?.toLocaleString()}
                       </div>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm mb-1">Move-in</p>
                       <div className="flex items-center gap-2 text-gray-900 font-bold">
                         <Calendar className="w-4 h-4 text-green-600" />
-                        {seekerPost.move_in_date || "ASAP"}
+                        {preferences.move_in_date || "ASAP"}
                       </div>
                     </div>
                   </div>
 
-                  {seekerPost.amenities_required && seekerPost.amenities_required.length > 0 && (
+                  {preferences.amenities_required && preferences.amenities_required.length > 0 && (
                     <>
                       <Separator />
                       <div>
                         <p className="text-gray-500 text-sm mb-3">Must-haves</p>
                         <div className="flex flex-wrap gap-2">
-                          {seekerPost.amenities_required.map((am: string, idx: number) => (
+                          {preferences.amenities_required.map((am: string, idx: number) => (
                             <Badge key={idx} variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200">
                               {am}
                             </Badge>

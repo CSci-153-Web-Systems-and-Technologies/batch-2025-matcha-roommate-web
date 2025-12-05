@@ -26,7 +26,6 @@ export default function ListingCard({ item }: Props) {
   const images = item.images || [];
   const hasImage = images.length > 0;
   
-  // Logic: Where should this card link to?
   const destinationUrl = item.type === 'room' 
     ? `/rooms/${item.post_id || ''}` 
     : `/profiles/${item.user_id || ''}`;
@@ -35,21 +34,32 @@ export default function ListingCard({ item }: Props) {
     <Link href={destinationUrl} className="block h-full">
       <div className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-300 flex flex-col h-full cursor-pointer">
         
-        {/* --- IMAGE SECTION --- */}
+        {/* --- IMAGE / HERO SECTION --- */}
         <div className="relative h-48 overflow-hidden bg-gray-100">
+          
+          {/* LOGIC: Show Post Image OR Seeker Avatar OR Fallback */}
           {hasImage ? (
-            // CASE A: We have an image
+            // 1. Priority: Post Images (e.g. Room Photos)
             <Image
               src={images[0]}
               alt={item.title || "Listing"}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
+          ) : item.type === 'seeker' && item.avatar_url ? (
+            // 2. Priority: Seeker Profile Picture (The "Face" of the ad)
+            <Image
+              src={item.avatar_url}
+              alt={item.first_name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+            />
           ) : (
+            // 3. Fallback: Placeholder UI
             <div className={`w-full h-full flex flex-col items-center justify-center text-white ${
                item.type === 'seeker' 
-                 ? 'bg-linear-to-br from-blue-400 to-blue-600' 
-                 : 'bg-gray-200 text-gray-400'                   
+                 ? 'bg-linear-to-br from-blue-400 to-blue-600' // Tailwind v4 Gradient
+                 : 'bg-gray-200 text-gray-400'
             }`}>
               {item.type === 'seeker' ? (
                 <>
@@ -65,13 +75,14 @@ export default function ListingCard({ item }: Props) {
             </div>
           )}
 
-          {/* Badges */}
+          {/* Type Badge */}
           <div className={`absolute top-3 left-3 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm ${
             item.type === 'room' ? 'bg-green-600' : 'bg-blue-500'
           }`}>
             {item.type === 'room' ? 'ROOM FOR RENT' : 'LOOKING FOR ROOM'}
           </div>
 
+          {/* Price Badge */}
           <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md text-green-800 font-bold text-sm px-3 py-1 rounded-lg shadow-sm border border-green-100">
             ₱{item.budget_or_price?.toLocaleString()}<span className="text-xs font-normal text-gray-500">/mo</span>
           </div>
@@ -93,7 +104,6 @@ export default function ListingCard({ item }: Props) {
               <span className="truncate max-w-[120px]">{item.location}</span>
             </div>
 
-            {/* AVATAR SECTION */}
             <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
               {item.avatar_url ? (
                  <div className="w-6 h-6 rounded-full border border-gray-200 overflow-hidden relative">
