@@ -38,7 +38,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
 
     fetchMessages();
 
-    // Realtime Listener
+    // Realtime: Listen for NEW messages
     const channel = supabase
       .channel(`chat:${conversationId}`)
       .on('postgres_changes', { 
@@ -48,7 +48,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
         filter: `conversation_id=eq.${conversationId}` 
       }, 
       (payload) => {
-        // Only add if we don't already have it (prevents duplicates from optimistic update)
+        // Prevent duplicates from optimistic updates
         setMessages((prev) => {
           if (prev.some(msg => msg.id === payload.new.id)) return prev;
           return [...prev, payload.new];
@@ -59,7 +59,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
-  // 2. Auto-scroll
+  // 2. Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -71,7 +71,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
     if (!newMessage.trim() || !conversationId) return;
 
     const text = newMessage;
-    setNewMessage(""); // Clear input
+    setNewMessage(""); // Clear input immediately
 
     // A. Optimistic Update (Show immediately)
     const optimisticMsg = {
@@ -92,7 +92,6 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
 
     if (error) {
       console.error("Error sending:", error);
-      // Optional: Remove the message if it failed
       alert("Failed to send message");
     } else {
       // Update parent timestamp
@@ -102,7 +101,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
 
   if (!conversationId || !otherUser) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 h-full text-gray-400 rounded-xl border border-gray-200">
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 rounded-xl border border-gray-200">
         <User className="w-12 h-12 mb-2 opacity-20" />
         <p>Select a conversation to start chatting</p>
       </div>
@@ -110,8 +109,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
   }
 
   return (
-    // REMOVED fixed height (h-screen) so it fits the parent layout
-    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="w-full flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center gap-3 bg-white shrink-0">
@@ -135,7 +133,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
           return (
             <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[75%] p-3 rounded-2xl text-sm shadow-sm ${
+                className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${
                   isMe
                     ? "bg-green-600 text-white rounded-br-none"
                     : "bg-white border border-gray-200 text-gray-800 rounded-bl-none"

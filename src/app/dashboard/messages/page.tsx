@@ -24,6 +24,7 @@ export default function MessagesPage() {
       if (paramChatId) {
         setActiveChatId(paramChatId);
         
+        // Fetch participant details for header immediately
         const { data: participants } = await supabase
           .from("participants")
           .select("profiles(first_name, avatar_url)")
@@ -42,10 +43,10 @@ export default function MessagesPage() {
   if (!user) return <div className="flex h-[80vh] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
 
   return (
-    // CONTAINER: Centers the content vertically and horizontally
+    // 1. CONTAINER: Centers the content vertically and horizontally
     <div className="h-[calc(100vh-8rem)] flex items-center justify-center p-4">
       
-      {/* CHAT CARD: Fixed max-width and max-height for that "just right" feel */}
+      {/* 2. CHAT CARD: Fixed max-width and max-height for that "just right" feel */}
       <div className="w-full max-w-5xl h-[85vh] max-h-[700px] grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
         
         {/* Sidebar */}
@@ -60,6 +61,7 @@ export default function MessagesPage() {
               onSelect={(id, otherUser) => {
                 setActiveChatId(id);
                 setActiveChatUser(otherUser);
+                // Clear URL param without refresh
                 window.history.replaceState(null, '', '/dashboard/messages');
               }} 
             />
@@ -67,7 +69,7 @@ export default function MessagesPage() {
         </div>
 
         {/* Main Chat Window */}
-        <div className={`md:col-span-2 lg:col-span-3 h-full ${!activeChatId ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`md:col-span-2 lg:col-span-3 h-full w-full ${!activeChatId ? 'hidden md:block' : 'block'}`}>
           <ChatWindow 
             conversationId={activeChatId} 
             currentUserId={user.id} 
