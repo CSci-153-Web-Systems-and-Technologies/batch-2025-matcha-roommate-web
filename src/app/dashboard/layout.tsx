@@ -19,8 +19,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       {/* 3. Main Content Area */}
       <main 
         className={cn(
-          // CHANGED: Split 'p-6' into 'px-6 pb-6' and force 'pt-24' (6rem/96px)
-          // This guarantees enough space for the 64px header + spacing
           "min-h-screen transition-all duration-300 ease-in-out pt-24 px-6 pb-6",
           isCollapsed ? "md:ml-16" : "md:ml-64"
         )}

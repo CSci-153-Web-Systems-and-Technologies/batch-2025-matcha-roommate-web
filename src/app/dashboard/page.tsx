@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react"; // Added Search icon
 import ListingFilters from "@/components/listings/ListingFilters";
 import ListingCard, { FeedItem } from "@/components/listings/ListingCard";
 import { createClient } from "@/utils/supabase/server";
@@ -8,8 +8,6 @@ import { createClient } from "@/utils/supabase/server";
 export default async function DashboardOverview() {
   const supabase = await createClient();
 
-  // 1. Fetch from your existing 'unified_feed' table/view
-  // We trust this table already standardizes columns like 'budget_or_price'
   const { data: posts, error } = await supabase
     .from('unified_feed')
     .select('*')
@@ -30,9 +28,11 @@ export default async function DashboardOverview() {
         </div>
 
         <div className="flex gap-3">
+           {/* CHANGED: "Update Profile" -> "Room Wanted" */}
            <Link href="/profiles/create">
-            <Button variant="outline" className="gap-2 border-green-600 text-green-700 hover:bg-green-50">
-              Update Profile
+            <Button variant="outline" className="gap-2 border-green-600 text-green-700 hover:bg-green-50 font-bold">
+              <Search className="w-4 h-4" />
+              Room Wanted
             </Button>
           </Link>
 
@@ -60,13 +60,11 @@ export default async function DashboardOverview() {
           {posts && posts.length > 0 ? (
             posts.map((post) => (
               <ListingCard
-                // Use a combination of type + id for a unique key in mixed lists
                 key={`${post.type}-${post.post_id}`} 
-                item={post as FeedItem} // Cast to FeedItem type
+                item={post as FeedItem} 
               />  
             ))
           ) : (
-            // Empty State
             <div className="col-span-full py-16 text-center bg-white rounded-xl border border-gray-100 p-8 shadow-sm">
               <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <Search className="w-8 h-8 text-gray-400" />

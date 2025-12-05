@@ -62,29 +62,20 @@ export function RoomListingForm() {
     setCustomAmenities(customAmenities.filter((_, i) => i !== index));
   };
 
-  // --- UPDATED IMAGE HANDLER ---
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      
-      // 1. Check Limit (Max 5 images)
       if (selectedImages.length + files.length > 5) {
         alert("You can only upload up to 5 images.");
         return;
       }
-
-      // 2. Check Size (Max 5MB per file)
-      const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+      const MAX_SIZE = 5 * 1024 * 1024; 
       const oversizedFiles = files.filter((file) => file.size > MAX_SIZE);
-      
       if (oversizedFiles.length > 0) {
-        alert(`Some files are too large! Please choose images under 5MB. (${oversizedFiles.length} files skipped)`);
+        alert(`Some files are too large! (${oversizedFiles.length} files skipped)`);
         return;
       }
-
-      // 3. Add Valid Files
       setSelectedImages((prev) => [...prev, ...files]);
-
       const newPreviews = files.map((file) => URL.createObjectURL(file));
       setImagePreviews((prev) => [...prev, ...newPreviews]);
     }
@@ -95,6 +86,7 @@ export function RoomListingForm() {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // --- UPDATED SUBMIT LOGIC FOR NEW SCHEMA ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -110,58 +102,95 @@ export function RoomListingForm() {
       return;
     }
 
-    // 2. Upload Images
-    const uploadedImageUrls: string[] = [];
+    try {
+      // 2. Insert into MASTER 'posts' table first
+      const { data: postData, error: postError } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          type: 'room', // Identify this as a room post
+          title: formData.title,
+          description: formData.description,
+        })
+        .select()
+        .single();
 
-    for (const file of selectedImages) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+      if (postError) throw new Error("Failed to create post: " + postError.message);
       
-      const { error: uploadError } = await supabase.storage
-        .from('room-images')
-        .upload(fileName, file);
+      const postId = postData.id;
 
-      if (uploadError) {
-        console.error("Upload failed:", uploadError);
-        alert(`Failed to upload ${file.name}: ${uploadError.message}`);
-        continue; 
+      // 3. Insert into 'room_posts' (Details)
+      const { error: roomError } = await supabase
+        .from('room_posts')
+        .insert({
+          post_id: postId, // Link to the master post
+          lister_type: formData.lister_type,
+          price: parseFloat(formData.price) || 0,
+          location: formData.location,
+          address: formData.address,
+          payment_scheme: formData.payment_scheme,
+          capacity: parseInt(formData.capacity) || 1,
+          available_slots: parseInt(formData.available_slots) || 1,
+        });
+
+      if (roomError) throw new Error("Failed to save room details: " + roomError.message);
+
+      // 4. Insert Amenities (One by one or bulk)
+      const finalAmenities = [...formData.amenities, ...customAmenities];
+      if (finalAmenities.length > 0) {
+        // First get the room_post_id (it might be different from post_id if you used gen_random_uuid for room_posts primary key)
+        // Actually, let's fetch the room_post ID we just created.
+        const { data: roomPost } = await supabase.from('room_posts').select('id').eq('post_id', postId).single();
+        
+        if (roomPost) {
+           const amenityInserts = finalAmenities.map(am => ({
+             room_post_id: roomPost.id,
+             amenity: am
+           }));
+           
+           const { error: amError } = await supabase.from('amenities').insert(amenityInserts);
+           if (amError) console.error("Amenity error:", amError);
+        }
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('room-images')
-        .getPublicUrl(fileName);
-        
-      uploadedImageUrls.push(publicUrl);
-    }
+      // 5. Upload & Insert Images
+      if (selectedImages.length > 0) {
+        const imageInserts = [];
 
-    // 3. Save Post
-    const finalAmenities = [...formData.amenities, ...customAmenities];
+        for (const file of selectedImages) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${postId}/${Date.now()}-${Math.random()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('room-images')
+            .upload(fileName, file);
 
-    const { error } = await supabase
-      .from('room_posts')
-      .insert({
-        user_id: user.id,
-        lister_type: formData.lister_type,
-        title: formData.title,
-        location: formData.location,
-        address: formData.address,
-        payment_scheme: formData.payment_scheme,
-        price: parseFloat(formData.price) || 0,
-        capacity: parseInt(formData.capacity) || 1,
-        available_slots: parseInt(formData.available_slots) || 1,
-        description: formData.description,
-        amenities: finalAmenities,
-        images: uploadedImageUrls,
-      });
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('room-images')
+              .getPublicUrl(fileName);
+            
+            imageInserts.push({
+              post_id: postId,
+              url: publicUrl
+            });
+          }
+        }
 
-    if (error) {
-      console.error("Error posting room:", error);
-      alert("Failed to post room: " + error.message);
-    } else {
+        if (imageInserts.length > 0) {
+          await supabase.from('images').insert(imageInserts);
+        }
+      }
+
+      // Success!
       router.push("/dashboard");
-    }
 
-    setIsLoading(false);
+    } catch (err: any) {
+      console.error("Error posting room:", err);
+      alert(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const commonAmenities = [
