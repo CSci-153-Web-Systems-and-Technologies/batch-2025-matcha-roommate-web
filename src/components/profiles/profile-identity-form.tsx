@@ -20,12 +20,14 @@ export function ProfileIdentityForm() {
   const [loadingData, setLoadingData] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   
+  // View vs Edit Mode
   const [isEditing, setIsEditing] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
 
   const [customOccupation, setCustomOccupation] = useState("");
 
   const [formData, setFormData] = useState({
+    // --- IDENTITY (Table: profiles) ---
     avatar_url: "",
     first_name: "",
     last_name: "",
@@ -35,6 +37,8 @@ export function ProfileIdentityForm() {
     birthdate: "", 
     occupation: "",
     bio: "",
+    
+    // --- HABITS (Table: profile_habits) ---
     cleanliness: "average",
     sleep_schedule: "early",
     smoking_status: "non-smoker",
@@ -42,6 +46,7 @@ export function ProfileIdentityForm() {
     pet_status: "no-pets",
   });
 
+  // Helper to calculate age from birthdate
   const calculateAge = (birthdate: string) => {
     if (!birthdate) return "N/A";
     const today = new Date();
@@ -54,6 +59,7 @@ export function ProfileIdentityForm() {
     return age.toString();
   };
 
+  // 1. FETCH DATA
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
@@ -65,6 +71,7 @@ export function ProfileIdentityForm() {
         const { data: habits } = await supabase.from('profile_habits').select('*').eq('profile_id', user.id).single();
 
         if (profile) {
+          // If core fields like first/last name are missing, force edit mode
           if (profile.first_name && profile.last_name) {
             setHasProfile(true);
           } else {
@@ -73,6 +80,7 @@ export function ProfileIdentityForm() {
 
           setFormData((prev) => ({
             ...prev,
+            // Identity
             avatar_url: profile.avatar_url || "",
             first_name: profile.first_name || "",
             last_name: profile.last_name || "",
@@ -82,15 +90,13 @@ export function ProfileIdentityForm() {
             birthdate: profile.birthdate || "", 
             occupation: profile.occupation || "",
             bio: profile.bio || "",
+            // Habits
             cleanliness: habits?.cleanliness_level || "average",
             sleep_schedule: habits?.sleep_schedule || "early",
             smoking_status: habits?.smoking_status || "non-smoker",
             study_habits: habits?.study_habit || "quiet",
             pet_status: habits?.pet_status || "no-pets",
           }));
-        } else {
-          // If no profile exists at all, force edit mode
-          setIsEditing(true);
         }
       }
       setLoadingData(false);
@@ -111,12 +117,10 @@ export function ProfileIdentityForm() {
     const finalOccupation = formData.occupation === "other" ? customOccupation : formData.occupation;
 
     try {
-      // 1. UPSERT Profile (Create if doesn't exist, Update if it does)
-      // This fixes the "Foreign Key Constraint" error
+      // 1. Save Profile Details (Added missing fields)
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId, // Explicitly provide the ID
+        .update({
           avatar_url: formData.avatar_url,
           first_name: formData.first_name,
           last_name: formData.last_name,
@@ -126,7 +130,8 @@ export function ProfileIdentityForm() {
           birthdate: formData.birthdate || null,
           occupation: finalOccupation,
           bio: formData.bio,
-        });
+        })
+        .eq('id', userId);
 
       if (profileError) throw profileError;
 
@@ -156,6 +161,7 @@ export function ProfileIdentityForm() {
 
   if (loadingData) return <div className="p-12 text-center text-gray-500">Loading...</div>;
 
+  // --- VIEW MODE ---
   if (!isEditing && hasProfile) {
     return (
       <Card className="shadow-lg border-0 overflow-hidden">
@@ -187,11 +193,13 @@ export function ProfileIdentityForm() {
           </div>
           <div className="space-y-8">
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
-              <h3 className="font-bold text-gray-900 mb-2 text-xs uppercase tracking-wider text-green-700">About Me</h3>
+              {/* FIXED: Removed 'text-gray-900', kept 'text-green-700' */}
+              <h3 className="font-bold mb-2 text-xs uppercase tracking-wider text-green-700">About Me</h3>
               <p className="text-gray-700 leading-relaxed whitespace-pre-line">{formData.bio || "No bio added yet."}</p>
             </div>
             <div>
-              <h3 className="font-bold text-gray-900 mb-4 text-xs uppercase tracking-wider text-green-700">My Lifestyle</h3>
+              {/* FIXED: Removed 'text-gray-900', kept 'text-green-700' */}
+              <h3 className="font-bold mb-4 text-xs uppercase tracking-wider text-green-700">My Lifestyle</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ViewItem icon={Sparkles} label="Cleanliness" value={formData.cleanliness} />
                 <ViewItem icon={Moon} label="Sleep Schedule" value={formData.sleep_schedule} />
@@ -206,6 +214,7 @@ export function ProfileIdentityForm() {
     );
   }
 
+  // --- EDIT MODE ---
   return (
     <Card className="shadow-xl border-0">
       <CardHeader className="bg-green-50 border-b border-green-100 p-8 flex flex-row justify-between items-center">
