@@ -10,13 +10,14 @@ import {
   User, MapPin, Calendar, Banknote, ShieldCheck, 
   ArrowLeft, Cigarette, Cat, Moon, BookOpen, Sparkles
 } from "lucide-react";
-// 1. ADD THIS IMPORT
 import { MessageButton } from "@/components/messaging/message-button";
+import { RequestButton } from "@/components/requests/request-button";
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
+  // 1. Fetch Profile Data
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
@@ -42,6 +43,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     return notFound();
   }
 
+  // 2. Fetch Active Seeker Post (Needed for the Request Button)
+  const { data: seekerPost } = await supabase
+    .from('posts')
+    .select('id')
+    .eq('user_id', id)
+    .eq('type', 'seeker')
+    .single();
+
   const habits = profile.profile_habits?.[0] || null;
   const preferences = profile.profile_preferences?.[0] || null;
 
@@ -50,6 +59,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-24">
+        {/* Back Button */}
         <div className="mb-6">
           <Link 
             href="/dashboard" 
@@ -60,12 +70,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </Link>
         </div>
 
+        {/* --- PROFILE HEADER CARD --- */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
           <div className="h-32 bg-linear-to-r from-green-600 to-green-400"></div>
           
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row gap-6 items-start -mt-12">
               
+              {/* Avatar */}
               <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 overflow-hidden shadow-md relative shrink-0">
                 {profile.avatar_url ? (
                   <Image 
@@ -81,6 +93,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 )}
               </div>
 
+              {/* Name & Actions */}
               <div className="flex-1 pt-2 md:pt-14">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
@@ -95,12 +108,24 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     </p>
                   </div>
                   
+                  {/* BUTTONS */}
                   <div className="flex gap-3 w-full md:w-auto">
-                    {/* 2. REPLACED STATIC BUTTON WITH MESSAGE BUTTON */}
+                    
+                    {/* 1. Request Button (Only if they are looking for a room) */}
+                    {seekerPost && (
+                      <RequestButton 
+                        postType="seeker"
+                        postId={seekerPost.id}
+                        receiverId={profile.id}
+                        className="flex-1 md:flex-none h-10"
+                      />
+                    )}
+
+                    {/* 2. Message Button */}
                     <MessageButton 
                       targetUserId={profile.id} 
                       targetName={profile.first_name}
-                      className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm"
+                      className="flex-1 md:flex-none h-10 bg-white text-green-700 border-2 border-green-600 hover:bg-green-50"
                     />
                   </div>
                 </div>
@@ -110,7 +135,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ... (Rest of the layout stays exactly the same) ... */}
+          
           {/* LEFT COLUMN: Bio & Habits */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">

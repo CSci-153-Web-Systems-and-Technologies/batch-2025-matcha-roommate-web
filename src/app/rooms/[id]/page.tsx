@@ -1,21 +1,22 @@
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, User, Check, ArrowLeft, ShieldCheck } from "lucide-react";
-import Image from "next/image"; 
 import { RoomImageGallery } from "@/components/rooms/RoomImageGallery"; 
-// 1. ADD THIS IMPORT
 import { MessageButton } from "@/components/messaging/message-button"; 
+import { RequestButton } from "@/components/requests/request-button";
 
 const formatPrice = (price: number) => 
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(price);
 
 export default async function RoomDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id } = await params; // 'id' matches the post_id
   const supabase = await createClient();
 
+  // 1. Fetch Post + Room Details + Images + Owner Profile + Amenities
   const { data: post, error } = await supabase
     .from('posts')
     .select(`
@@ -36,6 +37,7 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
     return notFound();
   }
 
+  // 2. Flatten Data
   const roomDetails = post.room_posts[0];
   const owner = post.profiles as any;
   const imageUrls = post.images?.map((img: any) => img.url) || [];
@@ -46,6 +48,7 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24">
+        {/* Back Button */}
         <div className="mb-6">
           <Link 
             href="/dashboard" 
@@ -58,12 +61,15 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT COLUMN */}
+          {/* --- LEFT COLUMN: Details --- */}
           <div className="lg:col-span-2 space-y-8">
+            
+            {/* Gallery */}
             <div className="rounded-2xl overflow-hidden shadow-sm bg-gray-200 h-[300px] md:h-[500px] relative">
                <RoomImageGallery images={imageUrls} title={post.title} />
             </div>
 
+            {/* Header */}
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div>
@@ -94,6 +100,7 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
               </div>
             </div>
 
+            {/* Description */}
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">About this place</h2>
               <p className="text-gray-600 leading-relaxed whitespace-pre-line">
@@ -101,6 +108,7 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
               </p>
             </div>
 
+            {/* Amenities */}
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Amenities</h2>
               {amenitiesList.length > 0 ? (
@@ -120,10 +128,11 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Owner Card */}
+          {/* --- RIGHT COLUMN: Owner & Actions --- */}
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 sticky top-24">
               <h3 className="font-bold text-gray-900 mb-4">Listed by</h3>
+              
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden relative border-2 border-green-500 shrink-0">
                   {owner?.avatar_url ? (
@@ -147,22 +156,31 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
                   </p>
                 </div>
               </div>
+
               <div className="space-y-3">
-                
-                {/* 2. REPLACED STATIC BUTTON WITH MESSAGE BUTTON */}
+                {/* 1. Request Button (Primary) */}
+                <RequestButton 
+                  postType="room"
+                  postId={post.id}
+                  receiverId={post.user_id}
+                  className="w-full h-12 text-base"
+                />
+
+                {/* 2. Message Button (Secondary) */}
                 <MessageButton 
                   targetUserId={post.user_id} 
                   targetName={owner?.first_name} 
-                  className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold text-base shadow-md transition-all"
+                  className="w-full h-12 bg-white text-green-700 border-2 border-green-600 hover:bg-green-50 font-bold"
                 />
                 
-                <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-200">
+                <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-200 mt-4">
                   <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Contact Number</p>
                   <p className="text-lg font-mono text-gray-900 font-bold tracking-wide">
                     {owner?.contact_number || "Hidden"}
                   </p>
                 </div>
               </div>
+
                <div className="mt-6 pt-6 border-t border-gray-100 text-center">
                 <p className="text-xs text-gray-400">
                   Safety Tip: Always view the room in person and meet in public places before paying any deposit.
@@ -170,6 +188,7 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
               </div>
             </div>
           </div>
+
         </div>
       </main>
     </div>
