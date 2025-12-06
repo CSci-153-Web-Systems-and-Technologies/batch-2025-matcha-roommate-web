@@ -2,7 +2,6 @@ import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-// 1. IMPORT THE SHELL
 import { DashboardShell } from "@/components/layout/DashboardShell"; 
 import { Badge } from "@/components/ui/badge";
 import { MapPin, User, Check, ArrowLeft, ShieldCheck, MessageCircle } from "lucide-react";
@@ -14,7 +13,7 @@ const formatPrice = (price: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(price);
 
 export default async function RoomDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id } = await params; 
   const supabase = await createClient();
 
   const { data: post, error } = await supabase
@@ -43,9 +42,9 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
   const amenitiesList = roomDetails.amenities?.map((a: any) => a.amenity) || [];
 
   return (
-    // 2. WRAP IN DASHBOARD SHELL
     <DashboardShell>
-      <div className="max-w-7xl mx-auto">
+      {/* FIXED: Removed 'max-w-7xl mx-auto', added 'w-full' */}
+      <div className="w-full">
         {/* Back Button */}
         <div className="mb-6">
           <Link 

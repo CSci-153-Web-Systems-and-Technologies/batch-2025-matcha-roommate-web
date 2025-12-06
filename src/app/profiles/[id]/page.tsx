@@ -2,7 +2,6 @@ import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-// 1. IMPORT THE SHELL
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,9 +53,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const preferences = profile.profile_preferences?.[0] || null;
 
   return (
-    // 2. WRAP IN DASHBOARD SHELL
     <DashboardShell>
-      <div className="max-w-5xl mx-auto">
+      {/* FIXED: Removed 'max-w-5xl mx-auto', added 'w-full' */}
+      <div className="w-full">
         {/* Back Button */}
         <div className="mb-6">
           <Link 
@@ -74,9 +73,16 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row gap-6 items-start -mt-12">
+              
+              {/* Avatar */}
               <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 overflow-hidden shadow-md relative shrink-0">
                 {profile.avatar_url ? (
-                  <Image src={profile.avatar_url} alt={profile.first_name || "User"} fill className="object-cover" />
+                  <Image 
+                    src={profile.avatar_url} 
+                    alt={profile.first_name || "User"} 
+                    fill 
+                    className="object-cover" 
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-green-100 text-green-700">
                     <User className="w-12 h-12" />
@@ -84,6 +90,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 )}
               </div>
 
+              {/* Name & Actions */}
               <div className="flex-1 pt-2 md:pt-14">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
@@ -98,6 +105,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     </p>
                   </div>
                   
+                  {/* BUTTONS */}
                   <div className="flex gap-3 w-full md:w-auto">
                     {seekerPost && (
                       <RequestButton 
@@ -110,7 +118,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     <MessageButton 
                       targetUserId={profile.id} 
                       targetName={profile.first_name}
-                      className="flex-1 md:flex-none h-10 bg-white text-green-700 border-2 border-green-600 hover:bg-green-50"
+                      className="flex-1 md:flex-none h-10 bg-white text-green-700 border-2 border-green-600 hover:bg-green-50 font-bold"
                     />
                   </div>
                 </div>
@@ -122,6 +130,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         {/* COLUMNS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
+          {/* LEFT COLUMN: Bio & Habits */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">About Me</h2>
@@ -142,6 +151,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             </div>
           </div>
 
+          {/* RIGHT COLUMN: Housing Preferences */}
           <div className="lg:col-span-1 space-y-6">
             {preferences ? (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
