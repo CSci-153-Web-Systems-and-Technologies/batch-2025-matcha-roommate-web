@@ -65,7 +65,7 @@ export function DashboardNavbar() {
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-green-500 border-b border-green-600 z-50 flex items-center justify-between shadow-sm px-4 sm:px-6 lg:px-8 transition-all">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-green-500 border-b border-green-600 z-50 flex items-center justify-between shadow-sm px-2 sm:px-1 lg:px-2 transition-all">
       
       {/* LEFT: Logo */}
       <div className="flex items-center gap-3 sm:gap-4 ml-1">

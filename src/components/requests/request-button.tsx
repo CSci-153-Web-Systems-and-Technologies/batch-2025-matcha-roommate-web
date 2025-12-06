@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
-// FIXED: Added 'CalendarCheck' and 'UserPlus' to the imports
 import { Loader2, CalendarCheck, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner"; // Using Sonner for nice notifications
 
 interface RequestButtonProps {
   postType: 'room' | 'seeker';
@@ -22,12 +22,12 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
   const router = useRouter();
   const supabase = createClient();
 
-  // Dynamic Label & Icon Logic
+  // --- DYNAMIC LABEL & ICON LOGIC ---
   const label = postType === 'room' ? "Room Request" : "Roommate Request";
   const Icon = postType === 'room' ? CalendarCheck : UserPlus;
   const requestType = postType === 'room' ? 'application' : 'invite';
 
-  // 1. Check for existing request on mount
+  // 1. Check if I already sent a request for this post
   useEffect(() => {
     const checkRequest = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -36,7 +36,7 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
         return;
       }
 
-      // Check if I already sent a request for this SPECIFIC post
+      // Query database to see if a request exists from ME to THIS POST
       const { data } = await supabase
         .from('housing_requests')
         .select('id')
@@ -57,20 +57,23 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) {
       router.push("/login");
       return;
     }
 
     if (user.id === receiverId) {
-      alert("You cannot send a request to yourself.");
+      toast.error("Action not allowed", {
+        description: "You cannot send a request to your own post."
+      });
       setLoading(false);
       return;
     }
 
     try {
       if (currentRequestId) {
-        // --- SCENARIO A: CANCEL REQUEST ---
+        // --- SCENARIO A: CANCEL REQUEST (Delete) ---
         const { error } = await supabase
           .from('housing_requests')
           .delete()
@@ -78,9 +81,10 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
 
         if (error) throw error;
 
-        setCurrentRequestId(null); // Switch UI back to "Send"
+        setCurrentRequestId(null); 
+        toast.success("Request Cancelled");
       } else {
-        // --- SCENARIO B: SEND REQUEST ---
+        // --- SCENARIO B: SEND REQUEST (Insert) ---
         const { data, error } = await supabase
           .from('housing_requests')
           .insert({
@@ -95,13 +99,17 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
 
         if (error) throw error;
 
-        setCurrentRequestId(data.id); // Switch UI to "Cancel"
+        setCurrentRequestId(data.id); // Switch UI to "Cancel" state
+        toast.success("Request Sent!", {
+          description: "The owner will be notified.",
+        });
       }
 
-      router.refresh(); // Refresh server components (like the Dashboard count)
+      router.refresh(); // Refresh server components (like Dashboard counts)
 
     } catch (error: any) {
-      alert("Error updating request: " + error.message);
+      console.error(error);
+      toast.error("Error", { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -116,7 +124,7 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
     );
   }
 
-  // --- STATE 1: REQUEST ALREADY SENT (Show Cancel) ---
+  // --- STATE 1: REQUEST ALREADY SENT (Show Cancel Button) ---
   if (currentRequestId) {
     return (
       <Button 
@@ -135,7 +143,7 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
     );
   }
 
-  // --- STATE 2: NO REQUEST (Show Send) ---
+ 
   return (
     <Button 
       onClick={handleToggleRequest} 

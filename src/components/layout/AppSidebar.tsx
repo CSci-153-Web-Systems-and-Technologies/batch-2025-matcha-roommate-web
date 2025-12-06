@@ -13,27 +13,37 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isCollapsed, isMobile, toggleSidebar } = useSidebar();
-  const [unreadCount, setUnreadCount] = useState(0); // Real state for the bubble
+  
+  // State for bubbles
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+  const [pendingReqCount, setPendingReqCount] = useState(0);
 
   const supabase = createClient();
 
-  // 1. Fetch & Listen for Unread Count
   useEffect(() => {
-    const fetchUnread = async () => {
+    const fetchCounts = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase.rpc('get_unread_msg_count');
-      if (typeof data === 'number') setUnreadCount(data);
+      // 1. Messages Count
+      const { data: msgCount } = await supabase.rpc('get_unread_msg_count');
+      if (typeof msgCount === 'number') setUnreadMsgCount(msgCount);
+
+      // 2. Requests Count (NEW)
+      const { data: reqCount } = await supabase.rpc('get_pending_request_count');
+      if (typeof reqCount === 'number') setPendingReqCount(reqCount);
     };
 
-    fetchUnread();
+    fetchCounts();
 
-    // Realtime Listener: Updates sidebar when new messages arrive or you read them
+    // Realtime Listeners
     const channel = supabase
-      .channel('sidebar_notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchUnread)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'participants' }, fetchUnread)
+      .channel('sidebar_updates')
+      // Listen for new messages
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchCounts)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'participants' }, fetchCounts)
+      // Listen for new requests (NEW)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'housing_requests' }, fetchCounts)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -49,9 +59,18 @@ export function AppSidebar() {
     { icon: Home, label: "Overview", href: "/dashboard" },
     { icon: User, label: "My Profile", href: "/dashboard/profile" },
     { icon: List, label: "My Listings", href: "/dashboard/listings" },
-    // Use the dynamic 'unreadCount' here
-    { icon: MessageSquare, label: "Messages", href: "/dashboard/messages", count: unreadCount > 0 ? unreadCount : undefined },
-    { icon: Bell, label: "Requests", href: "/dashboard/requests", count: 12 }, // Placeholder for now
+    { 
+      icon: MessageSquare, 
+      label: "Messages", 
+      href: "/dashboard/messages", 
+      count: unreadMsgCount > 0 ? unreadMsgCount : undefined 
+    },
+    { 
+      icon: Bell, 
+      label: "Requests", 
+      href: "/dashboard/requests", 
+      count: pendingReqCount > 0 ? pendingReqCount : undefined 
+    },
   ];
 
   const NavList = () => (
