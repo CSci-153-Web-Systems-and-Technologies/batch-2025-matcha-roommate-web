@@ -1,17 +1,47 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/context/SidebarContext";
 import { NotificationsPopover } from "@/components/notifications/notifications-popover";
+import { createClient } from "@/utils/supabase/client";
 
 export function DashboardNavbar() {
   const { toggleSidebar } = useSidebar();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [initials, setInitials] = useState("?");
+
+  // Fetch User Profile on Mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url, first_name, last_name')
+          .eq('id', user.id)
+          .single();
+          
+        if (profile) {
+          setAvatarUrl(profile.avatar_url);
+          
+          // Generate initials (e.g. "Juan Dela Cruz" -> "JD")
+          const first = profile.first_name?.[0] || "";
+          const last = profile.last_name?.[0] || "";
+          setInitials((first + last).toUpperCase() || "?");
+        }
+      }
+    };
+    fetchUser();
+  }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-green-500 border-b border-green-600 z-50 flex items-center justify-between shadow-sm px-2 sm:px-2 lg:px-3 transition-all">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-green-500 border-b border-green-600 z-50 flex items-center justify-between shadow-sm px-4 sm:px-6 lg:px-8 transition-all">
       
       {/* LEFT CONTAINER */}
       <div className="flex items-center gap-3 sm:gap-4 ml-1">
@@ -34,15 +64,13 @@ export function DashboardNavbar() {
               className="w-full h-full object-cover rounded-full"
             />
           </div>
-          {/* Hide text on mobile to save space for search bar */}
           <span className="text-lg font-bold text-white tracking-tight hidden lg:block">
             MatchaRoommate
           </span>
         </Link>
       </div>
 
-      {/* CENTER: Search Bar (NOW VISIBLE ON MOBILE) */}
-      {/* Changed: Removed 'hidden md:block' and adjusted margins */}
+      {/* CENTER: Search Bar */}
       <div className="flex-1 max-w-xl mx-2 md:mx-4">
         <div className="relative">
           <input
@@ -54,14 +82,26 @@ export function DashboardNavbar() {
         </div>
       </div>
 
-   
+      {/* RIGHT CONTAINER */}
       <div className="flex items-center gap-2 sm:gap-4 mr-1">
         
         <NotificationsPopover />
 
-        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-green-200 rounded-full flex items-center justify-center text-green-800 font-bold text-xs sm:text-sm shadow-inner border-2 border-green-400/50">
-          JP
-        </div>
+        {/* Dynamic User Avatar */}
+        <Link href="/dashboard/profile">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-green-400/50 shadow-inner relative flex items-center justify-center bg-green-200 hover:border-white transition-colors cursor-pointer">
+            {avatarUrl ? (
+              <Image 
+                src={avatarUrl} 
+                alt="Profile" 
+                fill 
+                className="object-cover" 
+              />
+            ) : (
+              <span className="text-green-800 font-bold text-xs sm:text-sm">{initials}</span>
+            )}
+          </div>
+        </Link>
       </div>
     </header>
   );
