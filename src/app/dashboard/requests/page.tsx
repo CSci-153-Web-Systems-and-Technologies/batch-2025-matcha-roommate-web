@@ -1,10 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link"; // Import Link
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import Link from "next/link";
 import { RequestActions } from "@/components/requests/request-actions";
 
 export default async function RequestsPage() {
@@ -13,12 +13,14 @@ export default async function RequestsPage() {
 
   if (!user) redirect("/login");
 
+  // Fetch Incoming
   const { data: incoming } = await supabase
     .from('housing_requests')
-    .select(`*, sender:profiles!sender_id(*), post:posts!post_id(id, title, type)`) // Ensure ID is fetched
+    .select(`*, sender:profiles!sender_id(*), post:posts!post_id(id, title, type)`)
     .eq('receiver_id', user.id)
     .order('created_at', { ascending: false });
 
+  // Fetch Outgoing
   const { data: outgoing } = await supabase
     .from('housing_requests')
     .select(`*, receiver:profiles!receiver_id(*), post:posts!post_id(id, title, type)`)
@@ -26,7 +28,9 @@ export default async function RequestsPage() {
     .order('created_at', { ascending: false });
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    // FIXED: Removed 'max-w-7xl mx-auto' to fix the spacing issue
+    // Added 'w-full' to ensure it fills the layout container
+    <div className="space-y-6 w-full">
       <div className="border-b border-gray-200 pb-6">
         <h1 className="text-3xl font-bold text-gray-900">Requests</h1>
         <p className="text-gray-500 mt-1">Manage your applications and roommate invites.</p>
@@ -39,11 +43,11 @@ export default async function RequestsPage() {
         </TabsList>
 
         <TabsContent value="incoming" className="space-y-4 mt-6">
-          {incoming?.length === 0 ? <p className="text-gray-500 text-center py-10">No requests.</p> : incoming?.map(req => <RequestCard key={req.id} request={req} type="incoming" />)}
+          {incoming?.length === 0 ? <p className="text-gray-500 text-center py-10">No requests received yet.</p> : incoming?.map(req => <RequestCard key={req.id} request={req} type="incoming" />)}
         </TabsContent>
 
         <TabsContent value="outgoing" className="space-y-4 mt-6">
-          {outgoing?.length === 0 ? <p className="text-gray-500 text-center py-10">No requests sent.</p> : outgoing?.map(req => <RequestCard key={req.id} request={req} type="outgoing" />)}
+          {outgoing?.length === 0 ? <p className="text-gray-500 text-center py-10">You haven't sent any requests.</p> : outgoing?.map(req => <RequestCard key={req.id} request={req} type="outgoing" />)}
         </TabsContent>
       </Tabs>
     </div>
@@ -60,10 +64,9 @@ function RequestCard({ request, type }: { request: any, type: 'incoming' | 'outg
     rejected: "bg-red-100 text-red-700",
   };
 
-  // Determine Post Link (Room or Profile)
   const postLink = request.post?.type === 'room' 
     ? `/rooms/${request.post.id}` 
-    : `/profiles/${otherUser.id}`; // Seeker posts usually link back to user profile
+    : `/profiles/${otherUser.id}`; 
 
   return (
     <Card>
@@ -74,7 +77,6 @@ function RequestCard({ request, type }: { request: any, type: 'incoming' | 'outg
                {otherUser?.avatar_url && <Image src={otherUser.avatar_url} fill alt="Avatar" className="object-cover" />}
             </div>
           </Link>
-          
           <div>
             <div className="flex items-center gap-2">
               <Link href={`/profiles/${otherUser.id}`} className="font-bold text-gray-900 hover:text-green-600 transition-colors">
@@ -84,7 +86,6 @@ function RequestCard({ request, type }: { request: any, type: 'incoming' | 'outg
                 {isRoomRequest ? "Room Request" : "Roommate Invite"}
               </Badge>
             </div>
-            
             <p className="text-sm text-gray-500 mt-0.5">
               for <Link href={postLink} className="font-medium text-gray-700 hover:underline hover:text-green-600">{request.post?.title || "Unknown Post"}</Link>
             </p>
@@ -103,6 +104,7 @@ function RequestCard({ request, type }: { request: any, type: 'incoming' | 'outg
             type={type}
             senderId={request.sender_id}
             receiverId={request.receiver_id}
+            postId={request.post_id}
           />
         </div>
       </CardContent>
