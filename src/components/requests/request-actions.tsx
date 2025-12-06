@@ -5,17 +5,17 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner"; // IMPORT TOAST
 
 interface RequestActionsProps {
   requestId: string;
   status: string;
   type: 'incoming' | 'outgoing';
   senderId: string;   
-  receiverId: string; 
+  receiverId: string;
+  postId: string; // <--- ADDED THIS LINE TO FIX THE ERROR
 }
 
-export function RequestActions({ requestId, status, type, senderId, receiverId }: RequestActionsProps) {
+export function RequestActions({ requestId, status, type, senderId, receiverId, postId }: RequestActionsProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -23,6 +23,7 @@ export function RequestActions({ requestId, status, type, senderId, receiverId }
   const handleStatusUpdate = async (newStatus: 'accepted' | 'rejected') => {
     setLoading(true);
     try {
+      // 1. Update Request Status
       const { error: updateError } = await supabase
         .from('housing_requests')
         .update({ status: newStatus })
@@ -30,6 +31,7 @@ export function RequestActions({ requestId, status, type, senderId, receiverId }
 
       if (updateError) throw updateError;
 
+      // 2. Create Notification
       await supabase.from('notifications').insert({
         user_id: senderId,
         type: newStatus === 'accepted' ? 'request_accepted' : 'request_rejected',
@@ -38,11 +40,14 @@ export function RequestActions({ requestId, status, type, senderId, receiverId }
           : "Update: Your request was declined.",
       });
 
+      // 3. IF ACCEPTED: Auto-start Chat
       if (newStatus === 'accepted') {
-        const { data: convId } = await supabase.rpc('get_or_create_conversation', { 
+        const { data: convId, error: rpcError } = await supabase.rpc('get_or_create_conversation', { 
           other_user_id: senderId 
         });
         
+        if (rpcError) console.error("Chat creation failed:", rpcError);
+
         if (convId) {
           await supabase.from('messages').insert({
             conversation_id: convId,
@@ -50,42 +55,32 @@ export function RequestActions({ requestId, status, type, senderId, receiverId }
             content: "✅ I've accepted your request! Let's discuss the move-in details here.",
           });
         }
-        
-        // SUCCESS TOAST
-        toast.success("Application Accepted", {
-          description: "A chat has been started automatically.",
-        });
-      } else {
-        toast.info("Application Declined");
       }
       
       router.refresh(); 
     } catch (err: any) {
-      toast.error("Error", { description: err.message }); // ERROR TOAST
+      alert("Error: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = async () => {
-    // We can use a custom toast UI for confirmation, but native confirm is safer for now.
     if (!confirm("Are you sure you want to cancel this request?")) return;
-    
     setLoading(true);
     try {
       const { error } = await supabase.from('housing_requests').delete().eq('id', requestId);
       if (error) throw error;
-      
-      toast.success("Request Cancelled"); // SUCCESS TOAST
       router.refresh();
     } catch (err: any) {
-      toast.error("Error", { description: err.message });
+      alert(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // ... (Render logic remains exactly the same) ...
+  // --- RENDER ---
+
   if (type === 'incoming') {
     if (status !== 'pending') return null;
     return (
