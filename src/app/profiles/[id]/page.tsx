@@ -2,7 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
+// 1. IMPORT THE SHELL
+import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -17,7 +18,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const { id } = await params;
   const supabase = await createClient();
 
-  // 1. Fetch Profile Data
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
@@ -43,7 +43,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     return notFound();
   }
 
-  // 2. Fetch Active Seeker Post (Needed for the Request Button)
   const { data: seekerPost } = await supabase
     .from('posts')
     .select('id')
@@ -55,10 +54,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const preferences = profile.profile_preferences?.[0] || null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <Navbar />
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-24">
+    // 2. WRAP IN DASHBOARD SHELL
+    <DashboardShell>
+      <div className="max-w-5xl mx-auto">
         {/* Back Button */}
         <div className="mb-6">
           <Link 
@@ -70,22 +68,15 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </Link>
         </div>
 
-        {/* --- PROFILE HEADER CARD --- */}
+        {/* PROFILE HEADER CARD */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
           <div className="h-32 bg-linear-to-r from-green-600 to-green-400"></div>
           
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row gap-6 items-start -mt-12">
-              
-              {/* Avatar */}
               <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 overflow-hidden shadow-md relative shrink-0">
                 {profile.avatar_url ? (
-                  <Image 
-                    src={profile.avatar_url} 
-                    alt={profile.first_name || "User"} 
-                    fill 
-                    className="object-cover" 
-                  />
+                  <Image src={profile.avatar_url} alt={profile.first_name || "User"} fill className="object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-green-100 text-green-700">
                     <User className="w-12 h-12" />
@@ -93,7 +84,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 )}
               </div>
 
-              {/* Name & Actions */}
               <div className="flex-1 pt-2 md:pt-14">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
@@ -108,10 +98,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     </p>
                   </div>
                   
-                  {/* BUTTONS */}
                   <div className="flex gap-3 w-full md:w-auto">
-                    
-                    {/* 1. Request Button (Only if they are looking for a room) */}
                     {seekerPost && (
                       <RequestButton 
                         postType="seeker"
@@ -120,8 +107,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                         className="flex-1 md:flex-none h-10"
                       />
                     )}
-
-                    {/* 2. Message Button */}
                     <MessageButton 
                       targetUserId={profile.id} 
                       targetName={profile.first_name}
@@ -134,9 +119,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div>
         </div>
 
+        {/* COLUMNS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT COLUMN: Bio & Habits */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">About Me</h2>
@@ -157,7 +142,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Housing Preferences */}
           <div className="lg:col-span-1 space-y-6">
             {preferences ? (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
@@ -165,7 +149,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                   <h3 className="font-bold text-gray-900 uppercase tracking-wider text-xs">Active Seeker Post</h3>
                 </div>
-
                 <div className="space-y-6">
                   <div>
                     <p className="text-gray-500 text-sm mb-1">Looking in area</p>
@@ -174,9 +157,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                       {preferences.location_preference}
                     </div>
                   </div>
-
                   <Separator />
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-gray-500 text-sm mb-1">Max Budget</p>
@@ -193,7 +174,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                       </div>
                     </div>
                   </div>
-
                   {preferences.amenities_required && preferences.amenities_required.length > 0 && (
                     <>
                       <Separator />
@@ -232,12 +212,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }
 
-// Helper Component for Habits
 function HabitItem({ icon: Icon, label, value, color }: any) {
   return (
     <div className="flex items-center gap-4">

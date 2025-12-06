@@ -5,19 +5,43 @@ import ListingFilters from "@/components/listings/ListingFilters";
 import ListingCard, { FeedItem } from "@/components/listings/ListingCard";
 import { createClient } from "@/utils/supabase/server";
 
-export default async function DashboardOverview() {
+export default async function DashboardOverview({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const supabase = await createClient();
+  const params = await searchParams;
 
-  const { data: posts, error } = await supabase
+  let query = supabase
     .from('unified_feed')
     .select('*')
     .order('created_at', { ascending: false });
 
+  // --- FILTERS ---
+  if (params.search) {
+    const term = `%${params.search}%`;
+    query = query.or(`title.ilike.${term},description.ilike.${term},location.ilike.${term}`);
+  }
+
+  if (params.type && params.type !== 'all') {
+    query = query.eq('type', params.type);
+  }
+
+  if (params.location) {
+    query = query.ilike('location', `%${params.location}%`);
+  }
+
+  if (params.maxPrice) {
+    query = query.lte('budget_or_price', params.maxPrice);
+  }
+
+  const { data: posts, error } = await query;
+
   if (error) console.error("Error fetching feed:", error);
 
   return (
-    // ADDED: max-w-7xl mx-auto to keep this page centered
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full">
       
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-6">
@@ -45,7 +69,7 @@ export default async function DashboardOverview() {
       
       {/* FEED SECTION */}
       <section className="pt-2">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+        <div className="flex flex-col gap-6 mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Recommended for You</h2>
             <p className="text-gray-500 text-sm mt-1">Based on your preferences and budget.</p>
@@ -53,7 +77,8 @@ export default async function DashboardOverview() {
           <ListingFilters />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Dynamic Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
           {posts && posts.length > 0 ? (
             posts.map((post) => (
               <ListingCard
@@ -62,14 +87,18 @@ export default async function DashboardOverview() {
               />  
             ))
           ) : (
-            <div className="col-span-full py-16 text-center bg-white rounded-xl border border-gray-100 p-8 shadow-sm">
-              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
+            <div className="col-span-full py-20 text-center bg-white rounded-xl border border-gray-100 p-8 shadow-sm">
+              <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-gray-300" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">No listings found</h3>
-              <p className="text-gray-500 max-w-sm mx-auto mt-2">
-                It looks like the feed is empty right now. Try adjusting your filters or check back later.
+              <h3 className="text-lg font-semibold text-gray-900">No results found for "{params.search}"</h3>
+              <p className="text-gray-500 max-w-sm mx-auto mt-2 mb-6">
+                Try a different keyword or clear your filters.
               </p>
+              
+              <Link href="/dashboard">
+                <Button variant="outline">Clear Search</Button>
+              </Link>
             </div>
           )}
         </div>

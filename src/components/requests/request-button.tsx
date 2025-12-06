@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
+// FIXED: Added 'CalendarCheck' and 'UserPlus' to the imports
 import { Loader2, CalendarCheck, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -15,13 +16,13 @@ interface RequestButtonProps {
 
 export function RequestButton({ postType, postId, receiverId, className }: RequestButtonProps) {
   const [loading, setLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(true); // Loading state for initial check
+  const [isChecking, setIsChecking] = useState(true);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   
   const router = useRouter();
   const supabase = createClient();
 
-  // Dynamic Label Logic
+  // Dynamic Label & Icon Logic
   const label = postType === 'room' ? "Room Request" : "Roommate Request";
   const Icon = postType === 'room' ? CalendarCheck : UserPlus;
   const requestType = postType === 'room' ? 'application' : 'invite';
@@ -121,7 +122,7 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
       <Button 
         onClick={handleToggleRequest} 
         disabled={loading} 
-        variant="outline"
+        variant="outline" 
         className={`bg-white text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-bold shadow-sm ${className}`}
       >
         {loading ? (

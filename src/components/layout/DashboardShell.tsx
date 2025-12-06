@@ -15,7 +15,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
       <main 
         className={cn(
-          "min-h-screen transition-all duration-300 ease-in-out pt-24 pb-6 px-4 sm:px-6 md:px-8", 
+          "min-h-screen transition-all duration-300 ease-in-out pt-24 px-6 pb-6", 
           isCollapsed ? "md:ml-16" : "md:ml-64"
         )}
       >
@@ -25,11 +25,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <DashboardContent>{children}</DashboardContent>

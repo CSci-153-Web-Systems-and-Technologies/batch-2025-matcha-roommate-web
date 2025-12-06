@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"; // Import hooks
+import { useRouter, useSearchParams } from "next/navigation"; // Import navigation
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, Search } from "lucide-react";
@@ -13,8 +14,33 @@ export function DashboardNavbar() {
   const { toggleSidebar } = useSidebar();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [initials, setInitials] = useState("?");
+  
+  // --- SEARCH STATE ---
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("search") || ""); // Init from URL
 
-  // Fetch User Profile on Mount
+  // Update local state if URL changes (e.g. user clicks "Clear filters")
+  useEffect(() => {
+    setQuery(searchParams.get("search") || "");
+  }, [searchParams]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent reload
+    
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (query.trim()) {
+      params.set("search", query.trim());
+    } else {
+      params.delete("search");
+    }
+    
+    // Push new URL (this triggers the server page to re-render)
+    router.push(`/dashboard?${params.toString()}`);
+  };
+
+  // --- USER FETCHING (Existing) ---
   useEffect(() => {
     const fetchUser = async () => {
       const supabase = createClient();
@@ -29,8 +55,6 @@ export function DashboardNavbar() {
           
         if (profile) {
           setAvatarUrl(profile.avatar_url);
-          
-          // Generate initials (e.g. "Juan Dela Cruz" -> "JD")
           const first = profile.first_name?.[0] || "";
           const last = profile.last_name?.[0] || "";
           setInitials((first + last).toUpperCase() || "?");
@@ -43,7 +67,7 @@ export function DashboardNavbar() {
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-green-500 border-b border-green-600 z-50 flex items-center justify-between shadow-sm px-4 sm:px-6 lg:px-8 transition-all">
       
-      {/* LEFT CONTAINER */}
+      {/* LEFT: Logo */}
       <div className="flex items-center gap-3 sm:gap-4 ml-1">
         <Button 
           variant="ghost" 
@@ -70,33 +94,31 @@ export function DashboardNavbar() {
         </Link>
       </div>
 
-      {/* CENTER: Search Bar */}
+      {/* CENTER: Interactive Search Bar */}
       <div className="flex-1 max-w-xl mx-2 md:mx-4">
-        <div className="relative">
+        {/* Wrap in <form> so "Enter" key works */}
+        <form onSubmit={handleSearch} className="relative">
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search listings..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             className="w-full pl-9 sm:pl-10 pr-4 py-2 rounded-full bg-green-700/30 border border-green-400/30 text-white placeholder-green-100 focus:bg-white focus:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-300 transition-all text-sm"
           />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-100" />
-        </div>
+          {/* Make Icon clickable */}
+          <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-green-100 hover:text-white">
+            <Search className="w-4 h-4" />
+          </button>
+        </form>
       </div>
 
-      {/* RIGHT CONTAINER */}
+      {/* RIGHT: Profile */}
       <div className="flex items-center gap-2 sm:gap-4 mr-1">
-        
         <NotificationsPopover />
-
-        {/* Dynamic User Avatar */}
         <Link href="/dashboard/profile">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-green-400/50 shadow-inner relative flex items-center justify-center bg-green-200 hover:border-white transition-colors cursor-pointer">
             {avatarUrl ? (
-              <Image 
-                src={avatarUrl} 
-                alt="Profile" 
-                fill 
-                className="object-cover" 
-              />
+              <Image src={avatarUrl} alt="Profile" fill className="object-cover" />
             ) : (
               <span className="text-green-800 font-bold text-xs sm:text-sm">{initials}</span>
             )}
