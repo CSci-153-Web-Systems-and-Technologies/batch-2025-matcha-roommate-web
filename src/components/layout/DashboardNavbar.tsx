@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react"; // Import hooks
-import { useRouter, useSearchParams } from "next/navigation"; // Import navigation
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, X } from "lucide-react"; // Added 'X' icon
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/context/SidebarContext";
 import { NotificationsPopover } from "@/components/notifications/notifications-popover";
@@ -18,29 +18,47 @@ export function DashboardNavbar() {
   // --- SEARCH STATE ---
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("search") || ""); // Init from URL
+  const [query, setQuery] = useState(searchParams.get("search") || ""); 
 
-  // Update local state if URL changes (e.g. user clicks "Clear filters")
+  // Sync Input with URL (Handles browser back button or page refresh)
   useEffect(() => {
     setQuery(searchParams.get("search") || "");
   }, [searchParams]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent reload
-    
+  // Helper to push URL updates
+  const updateSearchParam = (term: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    
-    if (query.trim()) {
-      params.set("search", query.trim());
+    if (term.trim()) {
+      params.set("search", term.trim());
     } else {
       params.delete("search");
     }
-    
-    // Push new URL (this triggers the server page to re-render)
     router.push(`/dashboard?${params.toString()}`);
   };
 
-  // --- USER FETCHING (Existing) ---
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSearchParam(query);
+  };
+
+  // 1. FIXED: Auto-reset when text is erased
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVal = e.target.value;
+    setQuery(newVal);
+    
+    // If the user clears the input completely, reset the search immediately
+    if (newVal === "") {
+      updateSearchParam("");
+    }
+  };
+
+  // 2. NEW: "X" Button Handler
+  const clearSearch = () => {
+    setQuery("");
+    updateSearchParam(""); // Clears URL immediately
+  };
+
+  // --- USER FETCHING ---
   useEffect(() => {
     const fetchUser = async () => {
       const supabase = createClient();
@@ -96,19 +114,30 @@ export function DashboardNavbar() {
 
       {/* CENTER: Interactive Search Bar */}
       <div className="flex-1 max-w-xl mx-2 md:mx-4">
-        {/* Wrap in <form> so "Enter" key works */}
-        <form onSubmit={handleSearch} className="relative">
+        <form onSubmit={handleSearch} className="relative group">
           <input
             type="text"
             placeholder="Search listings..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-9 sm:pl-10 pr-4 py-2 rounded-full bg-green-700/30 border border-green-400/30 text-white placeholder-green-100 focus:bg-white focus:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-300 transition-all text-sm"
+            onChange={handleInputChange} // Uses the new smart handler
+            className="w-full pl-9 sm:pl-10 pr-10 py-2 rounded-full bg-green-700/30 border border-green-400/30 text-white placeholder-green-100 focus:bg-white focus:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-300 transition-all text-sm"
           />
-          {/* Make Icon clickable */}
-          <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-green-100 hover:text-white">
+          
+          {/* Search Icon (Left) */}
+          <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-green-100 hover:text-white group-focus-within:text-gray-400 group-focus-within:hover:text-green-600">
             <Search className="w-4 h-4" />
           </button>
+
+          {/* Clear "X" Icon (Right) - Only shows when there is text */}
+          {query && (
+            <button 
+              type="button" 
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-green-100 hover:text-white group-focus-within:text-gray-400 group-focus-within:hover:text-red-500"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </form>
       </div>
 
