@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/utils/supabase/client"; // Import the helper we made
+import { createClient } from "@/utils/supabase/client"; 
 
 export function RegisterForm() {
   const router = useRouter();
@@ -29,7 +29,22 @@ export function RegisterForm() {
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const middleInitial = formData.get("middleInitial") as string;
-    const contact = formData.get("contact") as string;
+    
+    // Get the raw number the user typed (e.g., "9123456789")
+    const rawContact = formData.get("contact") as string;
+
+    // --- UPDATED VALIDATION ---
+    // Check if the user entered exactly 10 digits
+    const digitsOnlyRegex = /^\d{10}$/;
+    
+    if (!digitsOnlyRegex.test(rawContact)) {
+      setError("Invalid mobile number. Please enter the 10 digits after +63 (e.g., 9123456789).");
+      setLoading(false);
+      return;
+    }
+
+    // Automatically prepend +63
+    const fullContact = `+63${rawContact}`;
 
     // 2. Initialize Supabase
     const supabase = createClient();
@@ -39,12 +54,11 @@ export function RegisterForm() {
       email,
       password,
       options: {
-        // We save these details as "User Metadata"
         data: {
           first_name: firstName,
           last_name: lastName,
           middle_initial: middleInitial,
-          contact_number: contact,
+          contact_number: fullContact, // Save the full format
         },
       },
     });
@@ -53,9 +67,6 @@ export function RegisterForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      // 4. Redirect on Success
-      // Note: By default, Supabase might require email confirmation.
-      // For now, we assume it lets them in or you disabled confirmation in settings.
       if (redirectPath) {
         router.push(redirectPath);
       } else {
@@ -69,7 +80,8 @@ export function RegisterForm() {
       <CardContent className="p-0 md:grid md:grid-cols-2">
         
         {/* Left Side: The Form */}
-        <div className="p-8 md:p-12 bg-white">
+        {/* REDUCED PADDING: changed p-12 to p-8 to prevent unnecessary scrolling */}
+        <div className="p-6 md:p-8 bg-white">
           <div className="mx-auto max-w-md space-y-6">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-green-800">Create Account</h1>
@@ -80,7 +92,7 @@ export function RegisterForm() {
 
             {/* Error Message Display */}
             {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md text-center">
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md text-center border border-red-100 animate-in fade-in slide-in-from-top-1">
                 {error}
               </div>
             )}
@@ -103,8 +115,22 @@ export function RegisterForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contact">Contact Number</Label>
-                <Input id="contact" name="contact" type="tel" placeholder="0912 345 6789" required />
+                <Label htmlFor="contact">Mobile Number</Label>
+                {/* FIXED: Visual +63 Prefix */}
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500 pointer-events-none select-none">
+                    +63
+                  </div>
+                  <Input 
+                    id="contact" 
+                    name="contact" 
+                    type="tel" 
+                    placeholder="912 345 6789"  
+                    className="pl-12 font-mono" // Added left padding to clear the prefix
+                    maxLength={10} // Limit to 10 chars
+                    required 
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">

@@ -1,22 +1,21 @@
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { DashboardShell } from "@/components/layout/DashboardShell"; 
 import { Badge } from "@/components/ui/badge";
-import { MapPin, User, Check, ArrowLeft, MessageCircle, ShieldCheck } from "lucide-react";
-import Image from "next/image"; 
+import { MapPin, User, Check, ArrowLeft, ShieldCheck, MessageCircle } from "lucide-react";
 import { RoomImageGallery } from "@/components/rooms/RoomImageGallery"; 
+import { MessageButton } from "@/components/messaging/message-button"; 
+import { RequestButton } from "@/components/requests/request-button";
 
 const formatPrice = (price: number) => 
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(price);
 
 export default async function RoomDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params; // 'id' here is the POST ID (from the feed)
+  const { id } = await params; 
   const supabase = await createClient();
 
-  // 1. Fetch Post + Room Details + Images + Owner Profile + Amenities
-  // We query the 'posts' table because 'id' matches the post_id
   const { data: post, error } = await supabase
     .from('posts')
     .select(`
@@ -37,21 +36,15 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
     return notFound();
   }
 
-  // 2. Flatten the data for easier use
-  const roomDetails = post.room_posts[0]; // Supabase returns arrays for joins
+  const roomDetails = post.room_posts[0];
   const owner = post.profiles as any;
-  
-  // Convert images array of objects [{url: '...'}] -> ['...']
   const imageUrls = post.images?.map((img: any) => img.url) || [];
-  
-  // Flatten amenities
   const amenitiesList = roomDetails.amenities?.map((a: any) => a.amenity) || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <Navbar />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24">
+    <DashboardShell>
+      {/* FIXED: Removed 'max-w-7xl mx-auto', added 'w-full' */}
+      <div className="w-full">
         {/* Back Button */}
         <div className="mb-6">
           <Link 
@@ -65,15 +58,12 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* --- LEFT COLUMN --- */}
+          {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-8">
-            
-            {/* Gallery Component */}
             <div className="rounded-2xl overflow-hidden shadow-sm bg-gray-200 h-[300px] md:h-[500px] relative">
                <RoomImageGallery images={imageUrls} title={post.title} />
             </div>
 
-            {/* Title & Price Header */}
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div>
@@ -104,7 +94,6 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
               </div>
             </div>
 
-            {/* Description */}
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">About this place</h2>
               <p className="text-gray-600 leading-relaxed whitespace-pre-line">
@@ -112,7 +101,6 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
               </p>
             </div>
 
-            {/* Amenities */}
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Amenities</h2>
               {amenitiesList.length > 0 ? (
@@ -132,7 +120,7 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
             </div>
           </div>
 
-          {/* --- RIGHT COLUMN: Owner Card --- */}
+          {/* RIGHT COLUMN */}
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 sticky top-24">
               <h3 className="font-bold text-gray-900 mb-4">Listed by</h3>
@@ -160,11 +148,18 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
                 </div>
               </div>
               <div className="space-y-3">
-                <Button className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold text-base shadow-md transition-all">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Message Owner
-                </Button>
-                <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-200">
+                <RequestButton 
+                  postType="room"
+                  postId={post.id}
+                  receiverId={post.user_id}
+                  className="w-full h-12 text-base"
+                />
+                <MessageButton 
+                  targetUserId={post.user_id} 
+                  targetName={owner?.first_name} 
+                  className="w-full h-12 bg-white text-green-700 border-2 border-green-600 hover:bg-green-50 font-bold"
+                />
+                <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-200 mt-4">
                   <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Contact Number</p>
                   <p className="text-lg font-mono text-gray-900 font-bold tracking-wide">
                     {owner?.contact_number || "Hidden"}
@@ -179,7 +174,7 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }

@@ -2,20 +2,21 @@ import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
+import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
   User, MapPin, Calendar, Banknote, ShieldCheck, 
-  MessageCircle, ArrowLeft, Cigarette, Cat, Moon, BookOpen, Sparkles
+  ArrowLeft, Cigarette, Cat, Moon, BookOpen, Sparkles
 } from "lucide-react";
+import { MessageButton } from "@/components/messaging/message-button";
+import { RequestButton } from "@/components/requests/request-button";
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // 1. Fetch Profile + Habits + Preferences in one query
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
@@ -41,16 +42,20 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     return notFound();
   }
 
-  // 2. Safely extract nested data (Supabase returns arrays for joins)
-  // We use [0] because a user usually has only one set of habits/preferences
+  const { data: seekerPost } = await supabase
+    .from('posts')
+    .select('id')
+    .eq('user_id', id)
+    .eq('type', 'seeker')
+    .single();
+
   const habits = profile.profile_habits?.[0] || null;
   const preferences = profile.profile_preferences?.[0] || null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <Navbar />
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-24">
+    <DashboardShell>
+      {/* FIXED: Removed 'max-w-5xl mx-auto', added 'w-full' */}
+      <div className="w-full">
         {/* Back Button */}
         <div className="mb-6">
           <Link 
@@ -62,9 +67,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </Link>
         </div>
 
-        {/* --- PROFILE HEADER CARD --- */}
+        {/* PROFILE HEADER CARD */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-          
           <div className="h-32 bg-linear-to-r from-green-600 to-green-400"></div>
           
           <div className="px-8 pb-8">
@@ -86,7 +90,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 )}
               </div>
 
-              {/* Name & Basic Info */}
+              {/* Name & Actions */}
               <div className="flex-1 pt-2 md:pt-14">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
@@ -101,11 +105,21 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     </p>
                   </div>
                   
+                  {/* BUTTONS */}
                   <div className="flex gap-3 w-full md:w-auto">
-                    <Button className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Message
-                    </Button>
+                    {seekerPost && (
+                      <RequestButton 
+                        postType="seeker"
+                        postId={seekerPost.id}
+                        receiverId={profile.id}
+                        className="flex-1 md:flex-none h-10"
+                      />
+                    )}
+                    <MessageButton 
+                      targetUserId={profile.id} 
+                      targetName={profile.first_name}
+                      className="flex-1 md:flex-none h-10 bg-white text-green-700 border-2 border-green-600 hover:bg-green-50 font-bold"
+                    />
                   </div>
                 </div>
               </div>
@@ -113,6 +127,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div>
         </div>
 
+        {/* COLUMNS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* LEFT COLUMN: Bio & Habits */}
@@ -144,7 +159,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                   <h3 className="font-bold text-gray-900 uppercase tracking-wider text-xs">Active Seeker Post</h3>
                 </div>
-
                 <div className="space-y-6">
                   <div>
                     <p className="text-gray-500 text-sm mb-1">Looking in area</p>
@@ -153,9 +167,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                       {preferences.location_preference}
                     </div>
                   </div>
-
                   <Separator />
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-gray-500 text-sm mb-1">Max Budget</p>
@@ -172,7 +184,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                       </div>
                     </div>
                   </div>
-
                   {preferences.amenities_required && preferences.amenities_required.length > 0 && (
                     <>
                       <Separator />
@@ -211,12 +222,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }
 
-// Helper Component for Habits
 function HabitItem({ icon: Icon, label, value, color }: any) {
   return (
     <div className="flex items-center gap-4">
