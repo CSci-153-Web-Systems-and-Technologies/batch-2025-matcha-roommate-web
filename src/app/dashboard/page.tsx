@@ -16,24 +16,26 @@ export default async function DashboardOverview({
   let query = supabase
     .from('unified_feed')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }); // It sorts by newest, so the title fits perfectly
 
-  // --- FILTERS ---
+  // --- 1. SEARCH FILTER ---
   if (params.search) {
     const term = `%${params.search}%`;
     query = query.or(`title.ilike.${term},description.ilike.${term},location.ilike.${term}`);
   }
 
+  // --- 2. TYPE FILTER ---
   if (params.type && params.type !== 'all') {
     query = query.eq('type', params.type);
   }
 
-  if (params.location) {
-    query = query.ilike('location', `%${params.location}%`);
-  }
-
-  if (params.maxPrice) {
-    query = query.lte('budget_or_price', params.maxPrice);
+  // --- 3. SORTING LOGIC ---
+  if (params.sort === 'price_asc') {
+    query = query.order('budget_or_price', { ascending: true });
+  } else if (params.sort === 'price_desc') {
+    query = query.order('budget_or_price', { ascending: false });
+  } else {
+    query = query.order('created_at', { ascending: false });
   }
 
   const { data: posts, error } = await query;
@@ -71,8 +73,9 @@ export default async function DashboardOverview({
       <section className="pt-2">
         <div className="flex flex-col gap-6 mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Recommended for You</h2>
-            <p className="text-gray-500 text-sm mt-1">Based on your preferences and budget.</p>
+            {/* CHANGED: Neutral Title & Description */}
+            <h2 className="text-2xl font-bold text-gray-900">Latest Listings</h2>
+            <p className="text-gray-500 text-sm mt-1">Browse the newest rooms and roommate requests.</p>
           </div>
           <ListingFilters />
         </div>
@@ -93,7 +96,7 @@ export default async function DashboardOverview({
               </div>
               <h3 className="text-lg font-semibold text-gray-900">No results found for "{params.search}"</h3>
               <p className="text-gray-500 max-w-sm mx-auto mt-2 mb-6">
-                Try a different keyword or clear your filters.
+                Try a different keyword or sort order.
               </p>
               
               <Link href="/dashboard">
