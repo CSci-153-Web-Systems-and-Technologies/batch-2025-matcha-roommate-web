@@ -10,22 +10,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 1. Top Navbar (Fixed, h-16 = 64px) */}
       <DashboardNavbar />
-
-      {/* 2. Sidebar (Fixed Left) */}
       <AppSidebar />
 
-      {/* 3. Main Content Area */}
       <main 
         className={cn(
-          "min-h-screen transition-all duration-300 ease-in-out pt-24 px-6 pb-6",
+          "min-h-screen transition-all duration-300 ease-in-out pt-24 px-6 pb-6", // Padding creates the "Margin"
           isCollapsed ? "md:ml-16" : "md:ml-64"
         )}
       >
-        <div className="max-w-7xl mx-auto">
-          {children}
-        </div>
+        {/* REMOVED the <div class="max-w-7xl mx-auto"> wrapper here */}
+        {children}
       </main>
     </div>
   );

@@ -1,34 +1,58 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, User, MessageSquare, List, Bell, LogOut, Menu } from "lucide-react";
+import { Home, User, MessageSquare, List, Bell, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { createClient } from "@/utils/supabase/client"; // Import Supabase
-
-// ... sidebarItems logic stays the same ...
-const sidebarItems = [
-  { icon: Home, label: "Overview", href: "/dashboard" },
-  { icon: User, label: "My Profile", href: "/dashboard/profile" },
-  { icon: List, label: "My Listings", href: "/dashboard/listings" },
-  { icon: MessageSquare, label: "Messages", href: "/dashboard/messages", count: 3 },
-  { icon: Bell, label: "Requests", href: "/dashboard/requests", count: 12 },
-];
+import { createClient } from "@/utils/supabase/client";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter(); // Initialize Router
+  const router = useRouter();
   const { isCollapsed, isMobile, toggleSidebar } = useSidebar();
+  const [unreadCount, setUnreadCount] = useState(0); // Real state for the bubble
 
-  // --- Handle Sign Out ---
+  const supabase = createClient();
+
+  // 1. Fetch & Listen for Unread Count
+  useEffect(() => {
+    const fetchUnread = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase.rpc('get_unread_msg_count');
+      if (typeof data === 'number') setUnreadCount(data);
+    };
+
+    fetchUnread();
+
+    // Realtime Listener: Updates sidebar when new messages arrive or you read them
+    const channel = supabase
+      .channel('sidebar_notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchUnread)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'participants' }, fetchUnread)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const handleSignOut = async () => {
-    const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/"); // CHANGED: Redirect to Landing Page
-    router.refresh(); // Clear cache
+    router.push("/");
+    router.refresh();
   };
+
+  const sidebarItems = [
+    { icon: Home, label: "Overview", href: "/dashboard" },
+    { icon: User, label: "My Profile", href: "/dashboard/profile" },
+    { icon: List, label: "My Listings", href: "/dashboard/listings" },
+    // Use the dynamic 'unreadCount' here
+    { icon: MessageSquare, label: "Messages", href: "/dashboard/messages", count: unreadCount > 0 ? unreadCount : undefined },
+    { icon: Bell, label: "Requests", href: "/dashboard/requests", count: 12 }, // Placeholder for now
+  ];
 
   const NavList = () => (
     <nav className="flex-1 py-4 space-y-1">
@@ -46,7 +70,6 @@ export function AppSidebar() {
               isCollapsed && !isMobile ? "justify-center px-2" : "" 
             )}
           >
-            {/* Icon Container */}
             <div className="relative">
               <item.icon className={cn("w-6 h-6 shrink-0", isActive ? "text-green-600" : "text-gray-500")} />
               {isCollapsed && !isMobile && item.count && (
@@ -56,7 +79,6 @@ export function AppSidebar() {
               )}
             </div>
             
-            {/* Text & Badge */}
             {(!isCollapsed || isMobile) && (
               <div className="flex flex-1 items-center justify-between truncate">
                 <span>{item.label}</span>
@@ -68,7 +90,6 @@ export function AppSidebar() {
               </div>
             )}
 
-            {/* Hover Tooltip (Mini Mode) */}
             {isCollapsed && !isMobile && (
               <div className="absolute left-14 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
                 {item.label}
@@ -102,8 +123,6 @@ export function AppSidebar() {
       )}
     >
       <NavList />
-      
-      {/* Footer / Sign Out */}
       <div className="p-4 border-t border-gray-100 mt-auto">
         <button 
           onClick={handleSignOut}

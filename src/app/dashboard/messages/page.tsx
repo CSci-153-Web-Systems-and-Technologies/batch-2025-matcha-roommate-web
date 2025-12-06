@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { ChatList } from "@/components/messaging/chat-list";
 import { ChatWindow } from "@/components/messaging/chat-window";
@@ -14,6 +14,7 @@ export default function MessagesPage() {
   
   const supabase = createClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     const init = async () => {
@@ -24,7 +25,6 @@ export default function MessagesPage() {
       if (paramChatId) {
         setActiveChatId(paramChatId);
         
-        // Fetch participant details for header immediately
         const { data: participants } = await supabase
           .from("participants")
           .select("profiles(first_name, avatar_url)")
@@ -40,40 +40,54 @@ export default function MessagesPage() {
     init();
   }, [searchParams]);
 
-  if (!user) return <div className="flex h-[80vh] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
+  const handleBackToSidebar = () => {
+    setActiveChatId(null);
+    setActiveChatUser(null);
+    router.replace('/dashboard/messages', { scroll: false });
+  };
+
+  if (!user) return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
 
   return (
-    // 1. CONTAINER: Centers the content vertically and horizontally
-    <div className="h-[calc(100vh-8rem)] flex items-center justify-center p-4">
+    <div className="h-[calc(100vh-7.5rem)] w-full">
       
-      {/* 2. CHAT CARD: Fixed max-width and max-height for that "just right" feel */}
-      <div className="w-full max-w-5xl h-[85vh] max-h-[700px] grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {/* 2. CHAT CARD: Uses FLEX instead of Grid for better control */}
+      <div className="flex w-full h-full bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         
-        {/* Sidebar */}
-        <div className={`flex flex-col bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden h-full ${activeChatId ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm">
-            <h2 className="font-bold text-gray-800 text-lg">Messages</h2>
+        {/* SIDEBAR: Fixed width on desktop (w-80 or w-96), hidden on mobile if chat active */}
+        <div className={`
+          flex-col border-r border-gray-200 h-full bg-white
+          w-full md:w-80 lg:w-96 shrink-0 
+          ${activeChatId ? 'hidden md:flex' : 'flex'}
+          `}>
+          <div className="p-4 border-b border-gray-100 bg-white shrink-0 flex justify-between items-center h-16">
+            <h2 className="font-bold text-gray-900 text-lg tracking-tight">Chats</h2>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <ChatList 
               currentUserId={user.id} 
               activeId={activeChatId}
               onSelect={(id, otherUser) => {
                 setActiveChatId(id);
                 setActiveChatUser(otherUser);
-                // Clear URL param without refresh
-                window.history.replaceState(null, '', '/dashboard/messages');
+                router.replace(`/dashboard/messages?chatId=${id}`, { scroll: false });
               }} 
             />
           </div>
         </div>
 
-        {/* Main Chat Window */}
-        <div className={`md:col-span-2 lg:col-span-3 h-full w-full ${!activeChatId ? 'hidden md:block' : 'block'}`}>
+        {/* MAIN CHAT WINDOW: Flex-1 fills the remaining width */}
+        <div className={`
+          flex-1 flex-col h-full bg-slate-50 relative
+          ${!activeChatId ? 'hidden md:flex' : 'flex'}
+        `}>
+          {/* We pass 'h-full' implicitly via the flex container */}
           <ChatWindow 
             conversationId={activeChatId} 
             currentUserId={user.id} 
             otherUser={activeChatUser}
+            onBack={handleBackToSidebar}
           />
         </div>
 

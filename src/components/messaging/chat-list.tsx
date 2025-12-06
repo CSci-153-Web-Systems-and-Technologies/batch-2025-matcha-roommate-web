@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
-import { User, MessageCircle } from "lucide-react";
+import { User, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatListProps {
@@ -18,7 +18,6 @@ export function ChatList({ currentUserId, activeId, onSelect }: ChatListProps) {
 
   useEffect(() => {
     const fetchChats = async () => {
-      // Fetch from our SQL VIEW 'my_conversations'
       const { data } = await supabase
         .from("my_conversations")
         .select("*")
@@ -30,7 +29,6 @@ export function ChatList({ currentUserId, activeId, onSelect }: ChatListProps) {
 
     fetchChats();
     
-    // Realtime subscription for new conversations
     const channel = supabase
       .channel('conversations_list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, fetchChats)
@@ -41,15 +39,17 @@ export function ChatList({ currentUserId, activeId, onSelect }: ChatListProps) {
 
   if (conversations.length === 0) {
     return (
-      <div className="p-8 text-center text-gray-400 text-sm">
-        <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-20" />
-        <p>No messages yet.</p>
+      <div className="flex flex-col items-center justify-center h-48 text-center text-gray-400 text-sm p-4">
+        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+           <MessageSquare className="w-6 h-6 opacity-30" />
+        </div>
+        <p>No conversations yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-1 p-2">
+    <div className="flex flex-col gap-1 p-3">
       {conversations.map((chat) => (
         <button
           key={chat.conversation_id}
@@ -58,10 +58,10 @@ export function ChatList({ currentUserId, activeId, onSelect }: ChatListProps) {
             avatar_url: chat.avatar_url 
           })}
           className={cn(
-            "flex items-center gap-3 p-3 rounded-xl text-left transition-all",
+            "flex items-center gap-4 p-3 rounded-xl text-left transition-all duration-200",
             activeId === chat.conversation_id 
-              ? "bg-green-50 border border-green-200 shadow-sm" 
-              : "hover:bg-gray-50 border border-transparent"
+              ? "bg-green-50/80 border-green-100 shadow-sm ring-1 ring-green-100" 
+              : "hover:bg-gray-50 border-transparent"
           )}
         >
           <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden relative shrink-0 border border-gray-100">
@@ -72,14 +72,19 @@ export function ChatList({ currentUserId, activeId, onSelect }: ChatListProps) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-center mb-0.5">
-              <span className="font-bold text-gray-900 truncate">{chat.first_name} {chat.last_name}</span>
+            <div className="flex justify-between items-center mb-1">
+              <span className={cn(
+                "font-bold truncate text-sm",
+                activeId === chat.conversation_id ? "text-green-900" : "text-gray-900"
+              )}>
+                {chat.first_name} {chat.last_name}
+              </span>
               <span className="text-[10px] text-gray-400">
-                {new Date(chat.last_message_at).toLocaleDateString()}
+                {new Date(chat.last_message_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             </div>
             <p className={cn(
-              "text-xs truncate",
+              "text-xs truncate max-w-[180px]",
               activeId === chat.conversation_id ? "text-green-700 font-medium" : "text-gray-500"
             )}>
               {chat.last_message || "Started a conversation"}

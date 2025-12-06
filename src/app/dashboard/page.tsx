@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react"; // Added Search icon
+import { Plus, Search } from "lucide-react";
 import ListingFilters from "@/components/listings/ListingFilters";
 import ListingCard, { FeedItem } from "@/components/listings/ListingCard";
 import { createClient } from "@/utils/supabase/server";
@@ -13,12 +13,11 @@ export default async function DashboardOverview() {
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error("Error fetching feed:", error);
-  }
+  if (error) console.error("Error fetching feed:", error);
 
   return (
-    <div className="space-y-6">
+    // ADDED: max-w-7xl mx-auto to keep this page centered
+    <div className="space-y-6 max-w-7xl mx-auto">
       
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-6">
@@ -28,7 +27,6 @@ export default async function DashboardOverview() {
         </div>
 
         <div className="flex gap-3">
-           {/* CHANGED: "Update Profile" -> "Room Wanted" */}
            <Link href="/profiles/create">
             <Button variant="outline" className="gap-2 border-green-600 text-green-700 hover:bg-green-50 font-bold">
               <Search className="w-4 h-4" />
@@ -55,7 +53,6 @@ export default async function DashboardOverview() {
           <ListingFilters />
         </div>
 
-        {/* Dynamic Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {posts && posts.length > 0 ? (
             posts.map((post) => (
