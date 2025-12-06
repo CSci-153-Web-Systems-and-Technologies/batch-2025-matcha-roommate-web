@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, CalendarCheck, UserPlus } from "lucide-react";
+import { Loader2, CalendarCheck, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface RequestButtonProps {
@@ -15,7 +15,9 @@ interface RequestButtonProps {
 
 export function RequestButton({ postType, postId, receiverId, className }: RequestButtonProps) {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'sent'>('idle');
+  const [isChecking, setIsChecking] = useState(true); // Loading state for initial check
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  
   const router = useRouter();
   const supabase = createClient();
 
@@ -24,7 +26,33 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
   const Icon = postType === 'room' ? CalendarCheck : UserPlus;
   const requestType = postType === 'room' ? 'application' : 'invite';
 
-  const handleRequest = async () => {
+  // 1. Check for existing request on mount
+  useEffect(() => {
+    const checkRequest = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsChecking(false);
+        return;
+      }
+
+      // Check if I already sent a request for this SPECIFIC post
+      const { data } = await supabase
+        .from('housing_requests')
+        .select('id')
+        .eq('sender_id', user.id)
+        .eq('post_id', postId)
+        .single();
+
+      if (data) {
+        setCurrentRequestId(data.id);
+      }
+      setIsChecking(false);
+    };
+
+    checkRequest();
+  }, [postId, supabase]);
+
+  const handleToggleRequest = async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -40,53 +68,76 @@ export function RequestButton({ postType, postId, receiverId, className }: Reque
     }
 
     try {
-      // Check if already requested
-      const { data: existing } = await supabase
-        .from('housing_requests')
-        .select('id')
-        .eq('sender_id', user.id)
-        .eq('post_id', postId)
-        .single();
+      if (currentRequestId) {
+        // --- SCENARIO A: CANCEL REQUEST ---
+        const { error } = await supabase
+          .from('housing_requests')
+          .delete()
+          .eq('id', currentRequestId);
 
-      if (existing) {
-        alert("You have already sent a request for this.");
-        setLoading(false);
-        return;
+        if (error) throw error;
+
+        setCurrentRequestId(null); // Switch UI back to "Send"
+      } else {
+        // --- SCENARIO B: SEND REQUEST ---
+        const { data, error } = await supabase
+          .from('housing_requests')
+          .insert({
+            sender_id: user.id,
+            receiver_id: receiverId,
+            post_id: postId,
+            request_type: requestType,
+            status: 'pending'
+          })
+          .select('id') // Get the new ID back
+          .single();
+
+        if (error) throw error;
+
+        setCurrentRequestId(data.id); // Switch UI to "Cancel"
       }
 
-      // Insert Request
-      const { error } = await supabase.from('housing_requests').insert({
-        sender_id: user.id,
-        receiver_id: receiverId,
-        post_id: postId,
-        request_type: requestType,
-        status: 'pending'
-      });
-
-      if (error) throw error;
-
-      setStatus('sent');
-      alert("Request sent successfully!");
-      router.refresh();
+      router.refresh(); // Refresh server components (like the Dashboard count)
 
     } catch (error: any) {
-      alert("Error sending request: " + error.message);
+      alert("Error updating request: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  if (status === 'sent') {
+  // Show a loading spinner while checking status (prevents button flashing)
+  if (isChecking) {
     return (
-      <Button disabled className={`bg-gray-100 text-gray-500 border-gray-200 ${className}`}>
-        Request Sent
+      <Button disabled className={`bg-gray-100 text-gray-400 border-gray-200 ${className}`}>
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
       </Button>
     );
   }
 
+  // --- STATE 1: REQUEST ALREADY SENT (Show Cancel) ---
+  if (currentRequestId) {
+    return (
+      <Button 
+        onClick={handleToggleRequest} 
+        disabled={loading} 
+        variant="outline"
+        className={`bg-white text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-bold shadow-sm ${className}`}
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <X className="w-4 h-4 mr-2" />
+        )}
+        Cancel Request
+      </Button>
+    );
+  }
+
+  // --- STATE 2: NO REQUEST (Show Send) ---
   return (
     <Button 
-      onClick={handleRequest} 
+      onClick={handleToggleRequest} 
       disabled={loading} 
       className={`bg-green-600 hover:bg-green-700 text-white font-bold shadow-md ${className}`}
     >
