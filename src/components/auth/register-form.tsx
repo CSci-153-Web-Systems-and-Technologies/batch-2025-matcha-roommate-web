@@ -22,35 +22,34 @@ export function RegisterForm() {
     setLoading(true);
     setError(null);
 
-    // 1. Collect data from the form
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const middleInitial = formData.get("middleInitial") as string;
-    
-    // Get the raw number the user typed (e.g., "9123456789")
     const rawContact = formData.get("contact") as string;
 
-    // --- UPDATED VALIDATION ---
-    // Check if the user entered exactly 10 digits
+    // 1. Validate Contact Number (Must be exactly 10 digits)
     const digitsOnlyRegex = /^\d{10}$/;
-    
     if (!digitsOnlyRegex.test(rawContact)) {
-      setError("Invalid mobile number. Please enter the 10 digits after +63 (e.g., 9123456789).");
+      setError("Invalid mobile number. Please enter the 10 digits after +63.");
+      setLoading(false);
+      return;
+    }
+    const fullContact = `+63${rawContact}`;
+
+    // 2. Validate Email Format (Restored)
+    // This immediately stops inputs like "test@test" or "user@com"
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      setError("Invalid email address. Please enter a valid email (e.g. you@vsu.edu.ph).");
       setLoading(false);
       return;
     }
 
-    // Automatically prepend +63
-    const fullContact = `+63${rawContact}`;
-
-    // 2. Initialize Supabase
     const supabase = createClient();
-
-    // 3. Send to Supabase
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -58,7 +57,7 @@ export function RegisterForm() {
           first_name: firstName,
           last_name: lastName,
           middle_initial: middleInitial,
-          contact_number: fullContact, // Save the full format
+          contact_number: fullContact,
         },
       },
     });
@@ -67,11 +66,14 @@ export function RegisterForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      if (redirectPath) {
-        router.push(redirectPath);
-      } else {
-        router.push("/dashboard");
+      // SUCCESS
+      // If Supabase auto-logged us in, force sign out so they verify email first.
+      if (data.session) {
+        await supabase.auth.signOut();
       }
+      
+      // Redirect to Login Page with success instruction
+      router.push("/login?error=check_email");
     }
   };
 
@@ -80,7 +82,6 @@ export function RegisterForm() {
       <CardContent className="p-0 md:grid md:grid-cols-2">
         
         {/* Left Side: The Form */}
-        {/* REDUCED PADDING: changed p-12 to p-8 to prevent unnecessary scrolling */}
         <div className="p-6 md:p-8 bg-white">
           <div className="mx-auto max-w-md space-y-6">
             <div className="text-center">
@@ -92,7 +93,7 @@ export function RegisterForm() {
 
             {/* Error Message Display */}
             {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md text-center border border-red-100 animate-in fade-in slide-in-from-top-1">
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md text-center border border-red-100">
                 {error}
               </div>
             )}
@@ -103,9 +104,21 @@ export function RegisterForm() {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input id="firstName" name="firstName" placeholder="Juan" required />
                 </div>
+                
+                {/* --- FIXED MIDDLE INITIAL --- */}
                 <div className="space-y-2 w-20">
                   <Label htmlFor="middleInitial">M.I.</Label>
-                  <Input id="middleInitial" name="middleInitial" placeholder="D." maxLength={2} />
+                  <Input 
+                    id="middleInitial" 
+                    name="middleInitial" 
+                    placeholder="D" 
+                    maxLength={1} 
+                    className="text-center uppercase" // Removed font-bold, kept uppercase
+                    onChange={(e) => {
+                      // Only allow letters, remove dots/numbers, force uppercase
+                      e.target.value = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+                    }}
+                  />
                 </div>
               </div>
 
@@ -116,7 +129,6 @@ export function RegisterForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="contact">Mobile Number</Label>
-                {/* FIXED: Visual +63 Prefix */}
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500 pointer-events-none select-none">
                     +63
@@ -126,8 +138,8 @@ export function RegisterForm() {
                     name="contact" 
                     type="tel" 
                     placeholder="912 345 6789"  
-                    className="pl-12 font-mono" // Added left padding to clear the prefix
-                    maxLength={10} // Limit to 10 chars
+                    className="pl-12 font-mono"
+                    maxLength={10}
                     required 
                   />
                 </div>
