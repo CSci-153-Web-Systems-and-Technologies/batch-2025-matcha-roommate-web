@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,6 @@ import { createClient } from "@/utils/supabase/client";
 
 export function RegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect");
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +37,8 @@ export function RegisterForm() {
     }
     const fullContact = `+63${rawContact}`;
 
-    // 2. Validate Email Format (Restored)
-    // This immediately stops inputs like "test@test" or "user@com"
+    // 2. Validate Email Format
+    // This stops "fake" formats like 'test@test' or 'user@com'
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
       setError("Invalid email address. Please enter a valid email (e.g. you@vsu.edu.ph).");
@@ -66,14 +64,17 @@ export function RegisterForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      // SUCCESS
-      // If Supabase auto-logged us in, force sign out so they verify email first.
+      // SUCCESS LOGIC:
+      
+      // 1. If Supabase auto-logged us in, force sign out.
+      // We want to ensure they verify their email first.
       if (data.session) {
         await supabase.auth.signOut();
       }
       
-      // Redirect to Login Page with success instruction
-      router.push("/login?error=check_email");
+      // 2. Redirect to the dedicated Verify Email page
+      // We pass the email so the next page can display "Sent to user@example.com"
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     }
   };
 
@@ -105,7 +106,7 @@ export function RegisterForm() {
                   <Input id="firstName" name="firstName" placeholder="Juan" required />
                 </div>
                 
-                {/* --- FIXED MIDDLE INITIAL --- */}
+                {/* --- MIDDLE INITIAL FIELD --- */}
                 <div className="space-y-2 w-20">
                   <Label htmlFor="middleInitial">M.I.</Label>
                   <Input 
@@ -113,7 +114,7 @@ export function RegisterForm() {
                     name="middleInitial" 
                     placeholder="D" 
                     maxLength={1} 
-                    className="text-center uppercase" // Removed font-bold, kept uppercase
+                    className="text-center uppercase" // Not bold, just centered and uppercase
                     onChange={(e) => {
                       // Only allow letters, remove dots/numbers, force uppercase
                       e.target.value = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
