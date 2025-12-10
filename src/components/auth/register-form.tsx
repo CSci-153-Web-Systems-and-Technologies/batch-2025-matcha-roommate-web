@@ -2,20 +2,42 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/utils/supabase/client"; 
+import { toast } from "sonner"; // Added Toast for consistency
 
 export function RegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect");
   
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false); // Added Google loading state
   const [error, setError] = useState<string | null>(null);
+
+  // --- NEW: GOOGLE LOGIN HANDLER ---
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    const supabase = createClient();
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) {
+      toast.error("Google Signup Failed", { description: error.message });
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,8 +61,7 @@ export function RegisterForm() {
     }
     const fullContact = `+63${rawContact}`;
 
-    // 2. Validate Email Format (Restored)
-    // This immediately stops inputs like "test@test" or "user@com"
+    // 2. Validate Email Format
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
       setError("Invalid email address. Please enter a valid email (e.g. you@vsu.edu.ph).");
@@ -66,14 +87,12 @@ export function RegisterForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      // SUCCESS
-      // If Supabase auto-logged us in, force sign out so they verify email first.
+      // SUCCESS LOGIC:
       if (data.session) {
         await supabase.auth.signOut();
       }
       
-      // Redirect to Login Page with success instruction
-      router.push("/login?error=check_email");
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     }
   };
 
@@ -105,7 +124,7 @@ export function RegisterForm() {
                   <Input id="firstName" name="firstName" placeholder="Juan" required />
                 </div>
                 
-                {/* --- FIXED MIDDLE INITIAL --- */}
+                {/* --- MIDDLE INITIAL FIELD --- */}
                 <div className="space-y-2 w-20">
                   <Label htmlFor="middleInitial">M.I.</Label>
                   <Input 
@@ -113,9 +132,8 @@ export function RegisterForm() {
                     name="middleInitial" 
                     placeholder="D" 
                     maxLength={1} 
-                    className="text-center uppercase" // Removed font-bold, kept uppercase
+                    className="text-center uppercase"
                     onChange={(e) => {
-                      // Only allow letters, remove dots/numbers, force uppercase
                       e.target.value = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
                     }}
                   />
@@ -158,7 +176,7 @@ export function RegisterForm() {
               <Button 
                 type="submit" 
                 className="h-12 w-full text-lg font-semibold bg-green-700 hover:bg-green-800 mt-2"
-                disabled={loading}
+                disabled={loading || googleLoading}
               >
                 {loading ? "Creating Account..." : "Sign Up"}
               </Button>
@@ -173,9 +191,22 @@ export function RegisterForm() {
               </div>
             </div>
 
-            <Button variant="outline" className="h-12 w-full text-lg">
-              <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 6.75c1.65 0 3.12.63 4.29 1.83l3.21-3.21C17.46 3.06 14.97 2 12 2 7.7 2 3.99 4.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-              Google
+            {/* --- FIXED GOOGLE BUTTON --- */}
+            <Button 
+              variant="outline" 
+              className="h-12 w-full text-lg"
+              onClick={handleGoogleLogin} // Connected Handler
+              disabled={loading || googleLoading} // Connected State
+              type="button" // Important: Prevents submitting the form
+            >
+              {googleLoading ? (
+                "Connecting..." 
+              ) : (
+                <>
+                  <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 6.75c1.65 0 3.12.63 4.29 1.83l3.21-3.21C17.46 3.06 14.97 2 12 2 7.7 2 3.99 4.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Google
+                </>
+              )}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
