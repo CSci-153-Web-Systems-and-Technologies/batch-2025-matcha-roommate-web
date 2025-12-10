@@ -5,7 +5,7 @@ import { ChevronRight, ShieldCheck, Heart, MessageCircle, Search } from "lucide-
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="h-screen w-full bg-white overflow-y-auto overflow-x-hidden">
       <Navbar />
 
       <main>
@@ -81,7 +81,6 @@ export default function Home() {
               
               {/* Step 1 */}
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 group hover:-translate-y-1 transition-all duration-300">
-                {/* FIXED: justify-between pushes items to edges */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="w-12 h-12 bg-green-600 text-white text-xl font-bold rounded-xl flex items-center justify-center shadow-lg shrink-0">
                     1
