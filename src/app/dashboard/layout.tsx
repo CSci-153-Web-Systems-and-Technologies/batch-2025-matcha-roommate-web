@@ -3,6 +3,7 @@
 import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { DashboardNavbar } from "@/components/layout/DashboardNavbar";
+import ProfileCompletionModal from "@/components/dashboard/ProfileCompletionModal"; // <--- IMPORT MODAL
 import { cn } from "@/lib/utils";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 1. THE ONBOARDING MODAL */}
+      {/* This sits on top of everything and checks the user data */}
+      <ProfileCompletionModal />
+
       <DashboardNavbar />
       <AppSidebar />
 
