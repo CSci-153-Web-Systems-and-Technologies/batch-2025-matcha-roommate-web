@@ -75,16 +75,23 @@ export function ChatWindow({ conversationId, currentUserId, otherUser, onBack }:
     const text = newMessage;
     setNewMessage(""); 
 
+    // 1. Generate the ID here so we can share it
+    const messageId = crypto.randomUUID();
+
     const optimisticMsg = {
-      id: crypto.randomUUID(),
+      id: messageId, 
       conversation_id: conversationId,
       sender_id: currentUserId,
       content: text,
       created_at: new Date().toISOString(),
     };
+    
+    // 2. Add to UI immediately
     setMessages((prev) => [...prev, optimisticMsg]);
 
+    // 3. Send to Supabase WITH the same ID
     const { error } = await supabase.from("messages").insert({
+      id: messageId, // <--- THIS IS THE FIX
       conversation_id: conversationId,
       sender_id: currentUserId,
       content: text,
@@ -92,6 +99,7 @@ export function ChatWindow({ conversationId, currentUserId, otherUser, onBack }:
 
     if (error) {
       console.error("Error sending:", error);
+      setMessages((prev) => prev.filter(m => m.id !== messageId));
       alert("Failed to send message");
     } else {
       await supabase.from("conversations").update({ last_message_at: new Date() }).eq("id", conversationId);
