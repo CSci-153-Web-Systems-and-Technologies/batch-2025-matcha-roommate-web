@@ -12,7 +12,6 @@ import { Separator } from "@/components/ui/separator";
 import { nearVsuLocations } from "@/data/nearVsuLocations";
 import { createClient } from "@/utils/supabase/client";
 import { Plus, X, Loader2, Search } from "lucide-react"; 
-// 1. IMPORT THE IDENTITY FORM
 import { ProfileIdentityForm } from "../profiles/profile-identity-form"; 
 
 export function SeekerPostForm() {
@@ -27,10 +26,8 @@ export function SeekerPostForm() {
     amenities_required: [] as string[], 
   });
 
-  // Check if form is valid
   const isFormValid = formData.location_preference && formData.budget_max && formData.move_in_date;
 
-  // --- HANDLERS FOR POST FORM ---
   const toggleAmenity = (amenity: string) => {
     setFormData((prev) => {
       const current = prev.amenities_required;
@@ -57,7 +54,6 @@ export function SeekerPostForm() {
     }));
   };
 
-  // --- MAIN POST SUBMISSION ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return; 
@@ -73,8 +69,6 @@ export function SeekerPostForm() {
     }
 
     try {
-      // 1. Fetch the LATEST bio to use as description
-      // We fetch it fresh here so if they just edited it in the IdentityForm above, we get the new version.
       const { data: freshProfile } = await supabase
         .from('profiles')
         .select('bio')
@@ -83,7 +77,6 @@ export function SeekerPostForm() {
         
       const userBio = freshProfile?.bio || "No bio provided.";
 
-      // 2. Save Preferences
       await supabase.from('profile_preferences').delete().eq('profile_id', user.id);
       const { error: prefsError } = await supabase.from('profile_preferences').insert({
         profile_id: user.id,
@@ -95,7 +88,6 @@ export function SeekerPostForm() {
 
       if (prefsError) throw prefsError;
 
-      // 3. Create Public Post
       await supabase.from('posts').delete().eq('user_id', user.id).eq('type', 'seeker');
       const { error: postError } = await supabase.from('posts').insert({
         user_id: user.id,
@@ -120,7 +112,7 @@ export function SeekerPostForm() {
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
       
-      {/* 1. REUSED IDENTITY FORM (Review/Edit Profile) */}
+      {/* 1. REUSED IDENTITY FORM */}
       <section>
         <div className="flex items-center gap-2 mb-4 px-1">
            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">1</div>
@@ -129,19 +121,21 @@ export function SeekerPostForm() {
         <ProfileIdentityForm />
       </section>
 
-      {/* 2. PREFERENCES FORM (Post Details) */}
+      {/* 2. PREFERENCES FORM */}
       <section>
         <div className="flex items-center gap-2 mb-4 px-1">
-           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">2</div>
+           {/* Changed blue-100 to green-100 for consistency */}
+           <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">2</div>
            <h2 className="text-xl font-bold text-gray-900">Room Preferences</h2>
         </div>
 
         <Card className="shadow-xl border-0">
-          <CardHeader className="bg-blue-50 border-b border-blue-100 p-8">
-            <CardTitle className="text-2xl font-bold text-blue-800 flex items-center gap-2">
+          {/* CHANGED: Blue theme -> Green theme */}
+          <CardHeader className="bg-green-50 border-b border-green-100 p-8">
+            <CardTitle className="text-2xl font-bold text-green-800 flex items-center gap-2">
                 <Search className="w-6 h-6" /> Post a Room Request
             </CardTitle>
-            <CardDescription className="text-blue-700/80">
+            <CardDescription className="text-green-700/80">
               Tell us what you are looking for.
             </CardDescription>
           </CardHeader>
@@ -190,7 +184,7 @@ export function SeekerPostForm() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {formData.amenities_required.filter(a => !commonAmenities.includes(a)).map((amenity, index) => (
-                        <div key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <div key={index} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
                           {amenity}
                           <button type="button" onClick={() => removeAmenity(amenity)}><X className="w-3 h-3" /></button>
                         </div>
@@ -200,7 +194,7 @@ export function SeekerPostForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 text-lg font-bold bg-blue-700 hover:bg-blue-800 shadow-md disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="w-full h-12 text-lg font-bold bg-green-700 hover:bg-green-800 shadow-md disabled:opacity-50 disabled:cursor-not-allowed" 
                 disabled={isLoading || !isFormValid} 
               >
                 {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Post Request"}
