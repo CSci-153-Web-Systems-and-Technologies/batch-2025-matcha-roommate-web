@@ -86,7 +86,6 @@ export function RoomListingForm() {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // --- UPDATED SUBMIT LOGIC FOR NEW SCHEMA ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -108,7 +107,7 @@ export function RoomListingForm() {
         .from('posts')
         .insert({
           user_id: user.id,
-          type: 'room', // Identify this as a room post
+          type: 'room',
           title: formData.title,
           description: formData.description,
         })
@@ -123,7 +122,7 @@ export function RoomListingForm() {
       const { error: roomError } = await supabase
         .from('room_posts')
         .insert({
-          post_id: postId, // Link to the master post
+          post_id: postId,
           lister_type: formData.lister_type,
           price: parseFloat(formData.price) || 0,
           location: formData.location,
@@ -135,11 +134,9 @@ export function RoomListingForm() {
 
       if (roomError) throw new Error("Failed to save room details: " + roomError.message);
 
-      // 4. Insert Amenities (One by one or bulk)
+      // 4. Insert Amenities
       const finalAmenities = [...formData.amenities, ...customAmenities];
       if (finalAmenities.length > 0) {
-        // First get the room_post_id (it might be different from post_id if you used gen_random_uuid for room_posts primary key)
-        // Actually, let's fetch the room_post ID we just created.
         const { data: roomPost } = await supabase.from('room_posts').select('id').eq('post_id', postId).single();
         
         if (roomPost) {
@@ -148,8 +145,7 @@ export function RoomListingForm() {
              amenity: am
            }));
            
-           const { error: amError } = await supabase.from('amenities').insert(amenityInserts);
-           if (amError) console.error("Amenity error:", amError);
+           await supabase.from('amenities').insert(amenityInserts);
         }
       }
 
@@ -182,7 +178,6 @@ export function RoomListingForm() {
         }
       }
 
-      // Success!
       router.push("/dashboard");
 
     } catch (err: any) {
@@ -201,11 +196,12 @@ export function RoomListingForm() {
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-xl border-0">
-      <CardHeader className="bg-blue-50 border-b border-blue-100 p-8">
-        <CardTitle className="text-2xl font-bold text-blue-800">
+      {/* CHANGED: Blue theme -> Green theme */}
+      <CardHeader className="bg-green-50 border-b border-green-100 p-8">
+        <CardTitle className="text-2xl font-bold text-green-800">
           List Your Property
         </CardTitle>
-        <CardDescription className="text-blue-700/80 text-base">
+        <CardDescription className="text-green-700/80 text-base">
           Fill in the details to find the perfect tenant or roommate.
         </CardDescription>
       </CardHeader>
@@ -216,7 +212,7 @@ export function RoomListingForm() {
           {/* --- SECTION 1: LISTER INFO --- */}
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">1</span>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold">1</span>
               Who is listing?
             </h3>
             
@@ -229,7 +225,7 @@ export function RoomListingForm() {
                 <RadioGroupItem value="landlord" id="landlord" className="peer sr-only" />
                 <Label
                   htmlFor="landlord"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-green-600 [&:has([data-state=checked])]:border-green-600 cursor-pointer"
                 >
                   <span className="text-lg font-bold">Landlord / Owner</span>
                   <span className="text-sm text-muted-foreground text-center mt-1">
@@ -241,7 +237,7 @@ export function RoomListingForm() {
                 <RadioGroupItem value="tenant" id="tenant" className="peer sr-only" />
                 <Label
                   htmlFor="tenant"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-green-600 [&:has([data-state=checked])]:border-green-600 cursor-pointer"
                 >
                   <span className="text-lg font-bold">Current Tenant</span>
                   <span className="text-sm text-muted-foreground text-center mt-1">
@@ -257,7 +253,7 @@ export function RoomListingForm() {
           {/* --- SECTION 2: PROPERTY DETAILS --- */}
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">2</span>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold">2</span>
               Property Details
             </h3>
 
@@ -302,7 +298,7 @@ export function RoomListingForm() {
           {/* --- SECTION 3: PRICING & SLOTS --- */}
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">3</span>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold">3</span>
               Pricing & Capacity
             </h3>
 
@@ -351,7 +347,7 @@ export function RoomListingForm() {
           {/* --- SECTION 4: AMENITIES --- */}
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">4</span>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold">4</span>
               Amenities & Features
             </h3>
             
@@ -384,7 +380,7 @@ export function RoomListingForm() {
 
               <div className="flex flex-wrap gap-2 mt-4">
                 {customAmenities.map((amenity, index) => (
-                  <div key={index} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center gap-2">
+                  <div key={index} className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full flex items-center gap-2">
                     {amenity}
                     <button type="button" onClick={() => removeCustomAmenity(index)} className="hover:text-red-600 focus:outline-none">
                       <X className="w-3 h-3" />
@@ -400,7 +396,7 @@ export function RoomListingForm() {
           {/* --- SECTION 5: PHOTOS --- */}
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">5</span>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold">5</span>
               Photos & Description
             </h3>
 
@@ -452,7 +448,7 @@ export function RoomListingForm() {
 
           <Button 
             type="submit" 
-            className="w-full h-12 text-lg font-bold bg-blue-700 hover:bg-blue-800 transition-all shadow-lg"
+            className="w-full h-12 text-lg font-bold bg-green-700 hover:bg-green-800 transition-all shadow-lg"
             disabled={isLoading}
           >
             {isLoading ? (
