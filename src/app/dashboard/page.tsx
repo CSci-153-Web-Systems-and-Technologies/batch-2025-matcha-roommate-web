@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react"; // <--- 1. Import Suspense
 import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
 import ListingFilters from "@/components/listings/ListingFilters";
@@ -16,20 +17,17 @@ export default async function DashboardOverview({
   let query = supabase
     .from('unified_feed')
     .select('*')
-    .order('created_at', { ascending: false }); // It sorts by newest, so the title fits perfectly
+    .order('created_at', { ascending: false });
 
-  // --- 1. SEARCH FILTER ---
   if (params.search) {
     const term = `%${params.search}%`;
     query = query.or(`title.ilike.${term},description.ilike.${term},location.ilike.${term}`);
   }
 
-  // --- 2. TYPE FILTER ---
   if (params.type && params.type !== 'all') {
     query = query.eq('type', params.type);
   }
 
-  // --- 3. SORTING LOGIC ---
   if (params.sort === 'price_asc') {
     query = query.order('budget_or_price', { ascending: true });
   } else if (params.sort === 'price_desc') {
@@ -73,11 +71,14 @@ export default async function DashboardOverview({
       <section className="pt-2">
         <div className="flex flex-col gap-6 mb-8">
           <div>
-            {/* CHANGED: Neutral Title & Description */}
             <h2 className="text-2xl font-bold text-gray-900">Latest Listings</h2>
             <p className="text-gray-500 text-sm mt-1">Browse the newest rooms and roommate requests.</p>
           </div>
-          <ListingFilters />
+          
+          {/* 2. Wrap Filters in Suspense */}
+          <Suspense fallback={<div className="h-10 w-full bg-gray-100 rounded-lg animate-pulse" />}>
+            <ListingFilters />
+          </Suspense>
         </div>
 
         {/* Dynamic Grid */}
