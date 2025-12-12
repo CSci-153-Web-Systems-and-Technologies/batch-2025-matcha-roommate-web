@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // <--- 1. Import Suspense
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { ChatList } from "@/components/messaging/chat-list";
 import { ChatWindow } from "@/components/messaging/chat-window";
 import { Loader2 } from "lucide-react";
 
-export default function MessagesPage() {
+// 2. Rename the main logic to 'MessagesContent'
+function MessagesContent() {
   const [user, setUser] = useState<any>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [activeChatUser, setActiveChatUser] = useState<any>(null);
   
   const supabase = createClient();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // This is what needs Suspense
   const router = useRouter();
 
   useEffect(() => {
@@ -50,11 +51,8 @@ export default function MessagesPage() {
 
   return (
     <div className="h-[calc(100vh-7.5rem)] w-full">
-      
-      {/* 2. CHAT CARD: Uses FLEX instead of Grid for better control */}
       <div className="flex w-full h-full bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         
-        {/* SIDEBAR: Fixed width on desktop (w-80 or w-96), hidden on mobile if chat active */}
         <div className={`
           flex-col border-r border-gray-200 h-full bg-white
           w-full md:w-80 lg:w-96 shrink-0 
@@ -77,12 +75,10 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        {/* MAIN CHAT WINDOW: Flex-1 fills the remaining width */}
         <div className={`
           flex-1 flex-col h-full bg-slate-50 relative
           ${!activeChatId ? 'hidden md:flex' : 'flex'}
         `}>
-          {/* We pass 'h-full' implicitly via the flex container */}
           <ChatWindow 
             conversationId={activeChatId} 
             currentUserId={user.id} 
@@ -93,5 +89,14 @@ export default function MessagesPage() {
 
       </div>
     </div>
+  );
+}
+
+// 3. Export the wrapper
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[calc(100vh-7.5rem)] w-full items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>}>
+      <MessagesContent />
+    </Suspense>
   );
 }
